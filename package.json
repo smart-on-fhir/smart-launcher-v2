@@ -14,6 +14,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "fhirclient": "^2.5.2",
+    "if-env": "^1.0.4",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.29.4",
     "node-jose": "^2.1.1",
@@ -29,15 +30,16 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "start:server": "PORT=8445 ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts",
+    "start": "if-env NODE_ENV=production && npm run start:prod || npm run start:dev",
+    "start:prod": "ts-node --skipProject --transpile-only backend/server.ts",
+    "start:dev": "react-scripts start",
+    "start:server": "ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts -- --trace-uncaught --trace-warnings --unhandled-rejections=strict",
     "start:server:watch": "nodemon -e ts -x 'npm run start:server'",
     "test:server": "nyc --reporter=lcov mocha -r dotenv/config --exit -t 5000",
-    "test:server:watch": "nodemon -e ts -x 'npm run test:server'",
-    "test:e2e": "node -r dotenv/config ./node_modules/.bin/mocha -w -t 10000 ./test/e2e/spec/*"
+    "test:server:watch": "nodemon -e ts -x 'npm run test:server'"
   },
   "proxy": "http://localhost:8445",
   "eslintConfig": {
