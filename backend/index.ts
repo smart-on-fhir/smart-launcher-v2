@@ -7,7 +7,6 @@ import config                 from "./config"
 import fhirServer             from "./routes/fhir"
 import authServer             from "./routes/auth"
 import launcher               from "./routes/launcher"
-import generator              from "./routes/generator"
 import { bool }               from "./lib"
 import { globalErrorHandler } from "./middlewares"
 
@@ -43,9 +42,6 @@ app.get("/public_key", (req, res) => {
         res.type("text").send(key);
     });
 });
-
-// generate random strings or RS384 JWKs
-app.use("/generator", generator);
 
 // Provide some env variables to the frontend
 app.use("/env.js", (req, res) => {
