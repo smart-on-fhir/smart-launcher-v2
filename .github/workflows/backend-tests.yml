@@ -32,7 +32,7 @@ jobs:
 
       # - run: npm run build --if-present
 
-      - run: mocha -r dotenv/config --exit -t 5000
+      - run: ./node_modules/.bin/mocha -r dotenv/config --exit -t 5000
 
       # - name: Coveralls
         # uses: coverallsapp/github-action@master
