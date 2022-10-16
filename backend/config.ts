@@ -13,7 +13,7 @@ export default {
     /**
      * The host to listen on. If not set defaults to "localhost"
      */
-    host: env.HOST || "localhost",
+    host: env.HOST || "0.0.0.0",
 
     /**
      * We use this to sign our tokens
