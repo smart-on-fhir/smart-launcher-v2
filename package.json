@@ -85,6 +85,5 @@
   "author": "vlad.ignatov@gmail.com",
   "bugs": {
     "url": "https://github.com/smart-on-fhir/smart-launcher-v2/issues"
-  },
-  "homepage": "https://github.com/smart-on-fhir/smart-launcher-v2/"
+  }
 }

@@ -149,7 +149,7 @@ export default function Launcher() {
                 target="_blank">
                     SMART Community Forum
                 </a> or submit an issue or PR at <a
-                href={ pkg.homepage }
+                href="https://github.com/smart-on-fhir/smart-launcher-v2/"
                 rel="noreferrer noopener"
                 target="_blank">GitHub</a>.
             </p>
