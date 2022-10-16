@@ -94,8 +94,10 @@ export default function Launcher() {
             <br/>
             { tab === "0" && <LaunchUI /> }
             { tab === "1" && <ClientRegistrationUI /> }
-            <h3 className="text-success">Launch</h3>
-            <div className="form-group">
+            <div className="alert alert-success mt-2">
+                <h3 className="text-success mt-0">
+                    <i className="glyphicon glyphicon-fire"/> Launch
+                </h3>
                 <div style={{ display: "flex" }}>
                     <div style={{ flex: "10 1 0" }}>
                         <div className="input-group">
@@ -127,21 +129,20 @@ export default function Launcher() {
                             target="_blank"
                             rel="noreferrer noopener"
                             className="btn btn-default">
-                                <span className="text-primary">Launch Sample App</span>
+                                <span className="text-success">Launch Sample App</span>
                             </a>
                     </div>
                 </div>
                 { isStandaloneLaunch ?
-                    <span className="help-block small">
+                    <span className="small text-muted">
                         Your app should use this url to connect to the sandbox FHIR server
                     </span> :
-                    <span className="help-block small">
+                    <span className="small text-muted">
                         Full url of the page in your app that will initialize the
                         SMART session (often the path to a launch.html file or endpoint)
                     </span>
                 }
             </div>
-
             <br/>
             <hr/>
             <p className="text-center">
@@ -319,7 +320,7 @@ function ClientRegistrationUI() {
 
                     { query.cvm === "client-confidential-asymmetric" && (
                         <div className="form-group">
-                            <ul className="nav nav-tabs" role="tablist" style={{ marginBottom: 4 }}>
+                            <ul className="nav nav-tabs small" role="tablist" style={{ marginBottom: 4 }}>
                                 <li role="presentation" className={ query.jwks_tab === "0" ? "active" : undefined } onClick={ () => setQuery({ jwks_tab: "0" }) }>
                                     <b role="tab" className="text-primary">JWKS URL</b>
                                 </li>

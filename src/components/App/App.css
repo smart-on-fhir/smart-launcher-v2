@@ -1,3 +1,7 @@
+body {
+    font-size: 15px;
+}
+
 hr {
     margin: 1ex 0 1em
 }
@@ -39,6 +43,10 @@ hr {
     background-color: #fff;
     border: 1px solid #ddd;
     border-bottom-color: transparent;
+}
+
+.nav-tabs.small > li > * {
+    padding: 5px 10px;
 }
 
 .btn.disabled, .btn:disabled {
