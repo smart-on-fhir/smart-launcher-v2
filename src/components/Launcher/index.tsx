@@ -94,7 +94,7 @@ export default function Launcher() {
             <br/>
             { tab === "0" && <LaunchUI /> }
             { tab === "1" && <ClientRegistrationUI /> }
-            <h3>Launch</h3>
+            <h3 className="text-success">Launch</h3>
             <div className="form-group">
                 <div style={{ display: "flex" }}>
                     <div style={{ flex: "10 1 0" }}>
@@ -110,13 +110,13 @@ export default function Launcher() {
                             />
                             <span className="input-group-btn">
                                 { isStandaloneLaunch ? 
-                                    <button className="btn btn-success" onClick={() => copyElement("#launch-url")}>Copy</button> :
+                                    <button className="btn btn-primary" onClick={() => copyElement("#launch-url")}>Copy</button> :
                                     <a
                                         id="ehr-launch-url"
                                         href={userLaunchUrl.href}
                                         target="_blank"
                                         rel="noreferrer noopener"
-                                        className={"btn btn-success" + (userLaunchUrl ? "" : " disabled")}>Launch</a>
+                                        className={"btn btn-primary" + (userLaunchUrl ? "" : " disabled")}>Launch</a>
                                 }
                             </span>
                         </div>
@@ -126,7 +126,9 @@ export default function Launcher() {
                             href={sampleLaunchUrl.href}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="btn btn-primary">Launch Sample App</a>
+                            className="btn btn-default">
+                                <span className="text-primary">Launch Sample App</span>
+                            </a>
                     </div>
                 </div>
                 { isStandaloneLaunch ?
@@ -174,7 +176,7 @@ function ClientRegistrationUI() {
             <div className="row">
                 <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="client_id">Client ID</label>
+                        <label htmlFor="client_id" className="text-primary">Client ID</label>
                         <input
                             type="text"
                             name="client_id"
@@ -197,7 +199,7 @@ function ClientRegistrationUI() {
 
                 <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="redirect_uris">Redirect URIs</label>
+                        <label htmlFor="redirect_uris" className="text-primary">Redirect URIs</label>
                         <input
                             type="text"
                             name="redirect_uris"
@@ -220,7 +222,7 @@ function ClientRegistrationUI() {
             <div className="row">
                 <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="scope">Scopes</label>
+                        <label htmlFor="scope" className="text-primary">Scopes</label>
                         <input
                             type="text"
                             name="scope"
@@ -241,7 +243,7 @@ function ClientRegistrationUI() {
 
                 <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="client_validation_method">Client Identity Validation Method</label>
+                        <label htmlFor="client_validation_method" className="text-primary">Client Identity Validation Method</label>
                         <select id="client_validation_method" className="form-control" value={ query.cvm } onChange={e => setQuery({ cvm: e.target.value }) }>
                             <option value="client-public">client-public</option>
                             <option value="client-confidential-symmetric">client-confidential-symmetric</option>
@@ -258,7 +260,7 @@ function ClientRegistrationUI() {
 
             <div className="row">
                 <div className="col-sm-6">
-                    <label htmlFor="sim_error">Simulated Error</label>
+                    <label htmlFor="sim_error" className="text-primary">Simulated Error</label>
                     <select
                         id="sim_error"
                         className="form-control"
@@ -295,7 +297,7 @@ function ClientRegistrationUI() {
 
                     { query.cvm === "client-confidential-symmetric" && (
                         <div className="form-group">
-                            <label htmlFor="client_secret">Client Secret</label>
+                            <label htmlFor="client_secret" className="text-primary">Client Secret</label>
                             <input
                                 type="text"
                                 name="client_secret"
@@ -319,10 +321,10 @@ function ClientRegistrationUI() {
                         <div className="form-group">
                             <ul className="nav nav-tabs" role="tablist" style={{ marginBottom: 4 }}>
                                 <li role="presentation" className={ query.jwks_tab === "0" ? "active" : undefined } onClick={ () => setQuery({ jwks_tab: "0" }) }>
-                                    <b role="tab">JWKS URL</b>
+                                    <b role="tab" className="text-primary">JWKS URL</b>
                                 </li>
                                 <li role="presentation" className={ query.jwks_tab === "1" ? "active" : undefined } onClick={ () => setQuery({ jwks_tab: "1" }) }>
-                                    <b role="tab">JWKS Inline</b>
+                                    <b role="tab" className="text-primary">JWKS Inline</b>
                                 </li>
                             </ul>
                             {/* <label htmlFor="jwks_url">JWKS URL</label> */}
@@ -433,7 +435,7 @@ function LaunchUI() {
             <div className="row">
                 <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="launch_type">Launch Type</label>
+                        <label htmlFor="launch_type" className="text-primary">Launch Type</label>
                         <select
                             name="launch_type"
                             id="launch_type"
@@ -449,7 +451,7 @@ function LaunchUI() {
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="fhir_version">FHIR Version</label>
+                        <label htmlFor="fhir_version" className="text-primary">FHIR Version</label>
                         <select
                             name="fhir_version"
                             id="fhir_version"
@@ -468,7 +470,7 @@ function LaunchUI() {
 
                     <div className="form-group">
                         <div style={{ borderBottom: "1px solid #EEE" }}>
-                            <label htmlFor="launch_type">Misc. Options</label>
+                            <label className="text-primary">Misc. Options</label>
                         </div>
                         { (launch.launch_type === "provider-ehr" || launch.launch_type === "patient-portal") &&
                             <div className="checkbox">
@@ -524,7 +526,7 @@ function LaunchUI() {
 
                 <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="patient">Patient(s)</label>
+                        <label htmlFor="patient" className="text-primary">Patient(s)</label>
                         <PatientInput
                             onChange={list => setQuery({ patient: list })}
                             value={ launch.patient }
@@ -545,7 +547,7 @@ function LaunchUI() {
                     
                     { launch.launch_type !== "patient-portal" && launch.launch_type !== "patient-standalone" && (
                         <div className="form-group">
-                            <label htmlFor="provider">Provider(s)</label>
+                            <label htmlFor="provider" className="text-primary">Provider(s)</label>
                             <UserPicker
                                 fhirServerBaseUrl={fhirServerBaseUrl}
                                 onChange={ list => setQuery({ provider: list }) }
@@ -567,7 +569,7 @@ function LaunchUI() {
                     )}
                 
                     <div className="form-group">
-                        <label htmlFor="encounter">Encounter</label>
+                        <label htmlFor="encounter" className="text-primary">Encounter</label>
                         <select
                             name="encounter"
                             id="encounter"

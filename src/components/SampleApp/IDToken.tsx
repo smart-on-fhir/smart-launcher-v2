@@ -43,7 +43,7 @@ export default function IDToken({ client }: { client: Client }) {
         <div className="panel">
             <div className="row">
                 <div className="col-xs-6">
-                    <h4>ID Token</h4> { code && <span className="label label-warning pull-right">
+                    <h4>ID Token</h4> { code && <span className="label label-warning">
                         Expires: <CountDown exp={code.exp} />
                     </span> }
                 </div>

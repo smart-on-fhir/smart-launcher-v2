@@ -35,13 +35,13 @@
     "eject": "react-scripts eject",
     "start": "if-env NODE_ENV=production && npm run start:prod || npm run start:dev",
     "start:prod": "ts-node --skipProject --transpile-only backend/index.ts",
-    "start:dev": "react-scripts start",
+    "start:dev": "PORT=8444 react-scripts start",
     "start:server": "ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts -- --trace-uncaught --trace-warnings --unhandled-rejections=strict",
     "start:server:watch": "nodemon -e ts -x 'npm run start:server'",
     "test:server": "nyc --reporter=lcov mocha -r dotenv/config --exit -t 5000",
     "test:server:watch": "nodemon -e ts -x 'npm run test:server'"
   },
-  "proxy": "http://localhost:8444",
+  "proxy": "http://localhost:8445",
   "eslintConfig": {
     "extends": [
       "react-app",
