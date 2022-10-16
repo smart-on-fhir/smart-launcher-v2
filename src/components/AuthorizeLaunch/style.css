@@ -1,0 +1,28 @@
+.authorize-app {
+    margin-bottom: 40px;
+}
+.authorize-app ul {
+    margin-bottom: 30px;
+}
+.authorize-app li {
+    list-style: none;
+    margin: 1ex 0 1ex 20px;
+}
+.authorize-app .access-alert ul {
+    margin: 0;
+}
+.authorize-app .access-alert li {
+    line-height: normal;
+    list-style-type: disc;
+}
+.authorize-app .label {
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+.authorize-app .label {
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 1px 0 rgba(0, 0, 0, 0.5) inset;
+    display: inline-block;
+    min-width: 4em;
+    text-align: center;
+    vertical-align: top;
+}

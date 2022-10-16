@@ -1,0 +1,119 @@
+.ehr {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    height: 100vh;
+    color:rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+    background-image: linear-gradient(
+        135deg,
+        #CACCCC8F 25%,
+        #11000019 25%,
+        #11000019 50%,
+        #CACCCC8F 50%,
+        #CACCCC8F 75%,
+        #11000019 75%,
+        #11000019 100%
+    );
+    background-size: 11.31px 11.31px;
+}
+
+.ehr .alert {
+    align-self: center;
+}
+
+.ehr .text-muted {
+    color: #999;
+}
+
+.ehr .flex-row {
+    justify-content: space-between;
+    align-items: center;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.ehr-header {
+    background: linear-gradient(#F9F9F9CC, #FFFFFF00);
+    padding: 0 2.5em;
+}
+
+.ehr-header > .flex-row > div {
+    padding: 5px 10px;
+}
+
+.ehr-header > .flex-row > div.logo {
+    font-size: large;
+    padding: 5px 10px 5px 0;
+    font-weight: bold;
+}
+
+.ehr-header img {
+    height: 30px;
+    vertical-align: top;
+}
+
+.ehr-main-row {
+    display       : flex;
+    flex-direction: row;
+    flex          : 1;
+}
+
+.ehr iframe {
+    border       : 0px solid rgba(0, 0, 0, 0.4);
+    display      : flex;
+    flex         : 1 1 100px;
+    margin       : 0;
+    box-sizing   : border-box;
+    background   : #FFF;
+    height       : 100%;
+    border-radius: 5px;
+    box-shadow   : 0px 0px 0px 1px rgba(0, 0, 0, 0.4),
+                   1px 1px 1px 1px rgba(255, 255, 255, 0.75),
+                   -1px -1px 1px 1px rgba(0, 0, 0, 0.08);
+}
+
+.ehr-sidebar {
+    display: flex;
+    flex-grow: 0;
+    align-items: center;
+    color: rgba(200, 200, 200, 0.9);
+    text-shadow: 0px 0px 0px rgba(0, 0, 0, 0.9), -1px 0px 0px rgba(255, 255, 255, 0.5);
+    width: 2.5em;
+}
+.ehr-sidebar h3 {
+    transform: rotate(-90deg);
+    white-space: nowrap;
+    margin: 0px 0px 0px -62px;
+    line-height: 1;
+    padding: 0;
+    font-weight: 400;
+    text-transform: uppercase;
+}
+
+.ehr-status-bar {
+    display: flex;
+    flex: 0 0 1em;
+    padding: 0 2.5em;
+}
+.ehr-status-bar > .flex-row > div {
+    padding: 0 8px;
+    margin: 4px 0 3px;
+    box-sizing: border-box;
+    border-right: 1px solid rgba(0, 0, 0, 0.2);
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
+    line-height: 1.2;
+    flex: 1 1 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+}
+.ehr-status-bar > .flex-row > div:last-child {
+    border-right: none;
+}
+.ehr-status-bar > .flex-row > div:first-child {
+    border-left: none;
+}

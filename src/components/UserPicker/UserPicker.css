@@ -1,0 +1,53 @@
+.user-picker .dropdown-menu {
+    min-width : 100%;
+    max-height: 40vh;
+    overflow: auto;
+}
+
+.user-picker .picker-option {
+    white-space: normal;
+}
+
+.user-picker .picker-option > label {
+    display: block;
+    white-space: normal !important;
+    max-width: 100%;
+    cursor: pointer;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: 400;
+    line-height: 1.42857143;
+    color: #333;
+    white-space: nowrap;
+}
+
+.user-picker .picker-option > label:hover {
+    background: #EEE;
+}
+
+.user-picker .picker-option-left {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: auto;
+    text-overflow: ellipsis;
+    vertical-align: top;
+    width: 100%;
+    max-width: 20rem;
+}
+
+.user-picker .picker-option-right {
+    padding-left: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    text-align: right;
+    min-width: 10rem;
+    font-size: 90%;
+}
+
+.user-picker .dropdown-menu {
+    display: none;
+}
+.user-picker:focus        .dropdown-menu,
+.user-picker:focus-within .dropdown-menu {
+    display: block;
+}
