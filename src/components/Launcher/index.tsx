@@ -68,10 +68,7 @@ export default function Launcher() {
         sampleLaunchUrl.searchParams.delete("aud");
         sampleLaunchUrl.pathname = "/ehr";
         
-        userLaunchUrl.searchParams.set("app", userLaunchUrl.href);
-        userLaunchUrl.searchParams.delete("iss");
-        userLaunchUrl.searchParams.delete("launch");
-        userLaunchUrl.pathname = "/ehr";
+        userLaunchUrl = new URL(`/ehr?app=${encodeURIComponent(userLaunchUrl.href)}`, origin);
     }
 
 
