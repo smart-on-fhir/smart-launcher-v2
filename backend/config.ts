@@ -8,7 +8,7 @@ export default {
     /**
      * The port to listen on. If not set defaults to 8443
      */
-    port: env.LAUNCHER_PORT || env.PORT || 8443,
+    port: env.LAUNCHER_PORT || env.PORT || 8444,
 
     /**
      * The host to listen on. If not set defaults to "localhost"
