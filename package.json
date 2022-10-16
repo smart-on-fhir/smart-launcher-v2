@@ -1,6 +1,6 @@
 {
-  "name": "smart-launcher-frontend",
-  "version": "0.1.0",
+  "name": "smart-launcher",
+  "version": "2.0.0",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
@@ -77,5 +77,14 @@
     "nyc": "^15.1.0",
     "selenium-webdriver": "^4.4.0",
     "ts-mocha": "^10.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smart-on-fhir/smart-launcher-v2.git"
+  },
+  "author": "vlad.ignatov@gmail.com",
+  "bugs": {
+    "url": "https://github.com/smart-on-fhir/smart-launcher-v2/issues"
+  },
+  "homepage": "https://github.com/smart-on-fhir/smart-launcher-v2/"
 }
