@@ -165,7 +165,7 @@ function ClientRegistrationUI() {
     return (
         <>
             <div className="alert alert-info">
-                <i className="glyphicon glyphicon-info-sign" /> <b>All off these
+                <i className="glyphicon glyphicon-info-sign" /> <b>All of these
                 settings are optional!</b> Their only purpose is to simulate how
                 the app has been registered with the EHR, and by doing so, to
                 enforce some additional validation. Use these to test how your
