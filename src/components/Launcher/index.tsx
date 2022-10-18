@@ -92,16 +92,17 @@ export default function Launcher() {
             { tab === "0" && <LaunchUI /> }
             { tab === "1" && <ClientRegistrationUI /> }
             <div className="alert alert-success mt-2">
-                <h3 className="text-success mt-0">
-                    <i className="glyphicon glyphicon-fire"/> Launch
-                </h3>
+                <h4 className="text-success mt-0">
+                    <i className="glyphicon glyphicon-fire"/> {
+                    isStandaloneLaunch ? "Server's FHIR Base URL" : "App's Launch URL"
+                }
+                </h4>
                 <div style={{ display: "flex" }}>
                     <div style={{ flex: "10 1 0" }}>
                         <div className="input-group">
                             <input
                                 id="launch-url"
                                 type="url"
-                                placeholder="App Launch URL"
                                 className="form-control"
                                 value={ isStandaloneLaunch ? aud : launch_url }
                                 onChange={ e => !isStandaloneLaunch && setQuery({ launch_url: e.target.value }) }
