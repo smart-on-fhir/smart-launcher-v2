@@ -130,8 +130,8 @@ function Period({ period }: { period: fhir4.Period }) {
     return <small className="text-muted">N/A</small>
 }
 
-async function fetchPatient(baseUrl: string, id: string): Promise<fhir4.Patient> {
-    const res = await fetch(baseUrl + "/Patient/" + id, { mode: "cors" })
+async function fetchPatient(baseUrl: string, id: string, signal: AbortSignal): Promise<fhir4.Patient> {
+    const res = await fetch(baseUrl + "/Patient/" + id, { mode: "cors", signal })
     const txt = await res.text()
     
     if (!res.ok) {
@@ -143,14 +143,14 @@ async function fetchPatient(baseUrl: string, id: string): Promise<fhir4.Patient>
     return JSON.parse(txt)
 }
 
-async function fetchEncounters(baseUrl: string, patientId: string, pageSize = 10): Promise<fhir4.Bundle<Encounter>> {
+async function fetchEncounters(baseUrl: string, patientId: string, signal: AbortSignal, pageSize = 10): Promise<fhir4.Bundle<Encounter>> {
     const url = new URL(baseUrl + "/Encounter")
         
     url.searchParams.set("_count"    , pageSize + "")
     url.searchParams.set("patient"   , patientId    )
     url.searchParams.set("_sort:desc", "date"       )
 
-    const res = await fetch(url, { mode: "cors" })
+    const res = await fetch(url, { mode: "cors", signal })
     const txt = await res.text()
     
     if (!res.ok) {
@@ -232,19 +232,21 @@ export default function EncounterPicker() {
 
         dispatch({ type: "setLoading", payload: true })
 
+        const abortController = new AbortController()
+        const { signal } = abortController
+
         Promise.all([
-            fetchEncounters(baseUrl, patient, pageSize).then(encounters => {
+            fetchEncounters(baseUrl, patient, signal, pageSize).then(encounters => {
                 if (searchParams.get("select_first") === "true") {
                     const id = encounters.entry?.[0]?.resource?.id
                     if (id) {
-                        // console.log("Launching: ", id)
                         launchApp(id)
                         return new Promise(() => {}); // leave it pending (we will redirect)
                     }
                 }
                 return encounters
             }),
-            patientData || fetchPatient(baseUrl, patient)
+            patientData || fetchPatient(baseUrl, patient, signal)
         ])
         .then(([encounters, patient]) => {
             dispatch({
@@ -255,8 +257,14 @@ export default function EncounterPicker() {
                 }
             })
         })
-        .catch(error => dispatch({ type: "setError", payload: error }))
+        .catch(error => {
+            if (!signal.aborted) {
+                dispatch({ type: "setError", payload: error })
+            }
+        })
         .finally(() => dispatch({ type: "setLoading", payload: false }))
+
+        return () => abortController.abort()
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ pageSize, baseUrl, patient ])
