@@ -14,11 +14,8 @@ export default function Login() {
     const patient   = String(searchParams.get("patient" ) || "").trim().split(/\s*,\s*/).filter(Boolean)
     const provider  = String(searchParams.get("provider") || "").trim().split(/\s*,\s*/).filter(Boolean)
 
-    const [ id     , setId      ] = useState("")
-    const [ loading, setLoading ] = useState(true)
-    const [ recs   , setRecs    ] = useState<(fhir4.Practitioner | fhir4.Patient)[]>([])
-
-
+    
+    const submitButton = useRef<HTMLButtonElement>(null);
 
     let url;
     if (loginType === "provider") {
@@ -56,11 +53,13 @@ export default function Login() {
     const recs    = bundle?.entry?.map(e => e.resource!) || []
     const noData  = (!loading && !recs.length)
     const firstID = recs[0]?.id
+    
+    useEffect(() => {
+        if (firstID) {
+            setId(firstID)
+            setTimeout(() => submitButton.current!.focus(), 0);
         }
-        setLoading(false)
-    }
-
-    useMemo(() => fetchUsers(fetchUrl), [fetchUrl])
+    }, [firstID])
 
     return (
         <div className="container-fluid" style={{
@@ -125,6 +124,7 @@ export default function Login() {
                                 style={{ minWidth: "6em" }}
                                 onClick={submit}
                                 disabled={!id}
+                                ref={submitButton}
                             >
                                 { noData ? "Continue Without User" : "Login" }
                             </button>
