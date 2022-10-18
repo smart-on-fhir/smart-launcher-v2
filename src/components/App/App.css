@@ -34,7 +34,7 @@ hr {
     position: relative;
     display: block;
     padding: 10px 15px;
-    cursor: default;
+    cursor: pointer;
     opacity: 0.7;
 }
 
