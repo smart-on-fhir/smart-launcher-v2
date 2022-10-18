@@ -1,5 +1,6 @@
-import { useEffect, useReducer }           from "react"
+import { useReducer }                      from "react"
 import { useSearchParams }                 from "react-router-dom"
+import useFetch                            from "../../hooks/useFetch"
 import { formatAge, highlight, humanName } from "../../lib"
 import "./patient-picker.css"
 
@@ -7,9 +8,6 @@ import "./patient-picker.css"
 interface PatientPickerState {
     sortParam     : string 
     sortDir       : "asc" | "desc"
-    data          : fhir4.Bundle<fhir4.Patient> | null
-    error         : Error | null
-    loading       : boolean
     skip          : number
     searchText    : string
     pageSize      : number
@@ -25,9 +23,6 @@ interface PatientPickerAction {
 const initialState: PatientPickerState = {
     sortParam     : "name", 
     sortDir       : "desc",
-    data          : null,
-    error         : null,
-    loading       : true,
     pageSize      : 10,
     skip          : 0,
     searchText    : "",
@@ -45,15 +40,6 @@ function reducer(state: PatientPickerState, action: PatientPickerAction): Patien
                 return { ...state, sortDir: "desc" };
             }
             return { ...state, sortParam: "", sortDir: "asc" };
-
-        case "setData":
-            return { ...state, data: action.payload };
-
-        case "setError":
-            return { ...state, error: action.payload };
-        
-        case "setLoading":
-            return { ...state, loading: action.payload };
 
         case "search":
             return { ...state, searchText: action.payload };
@@ -91,9 +77,6 @@ export default function PatientPicker() {
     const {
         sortParam,
         sortDir,
-        error,
-        data,
-        loading,
         pageSize,
         searchText,
         skip,
@@ -101,38 +84,29 @@ export default function PatientPicker() {
         patient
     } = state;
 
-    useEffect(() => {
-        dispatch({ type: "setLoading", payload: true })
+    const url = new URL(baseUrl)
+    
+    if (searchText) {
+        url.searchParams.set("name:contains", searchText);
+    }
+    
+    url.searchParams.set("_format" , "application/json+fhir")
+    url.searchParams.set("_summary", "true")
+    url.searchParams.set("_count"  , pageSize + "")
 
-        const url = new URL(baseUrl)
-        if (searchText) {
-            url.searchParams.set("name:contains", searchText);
-        }
-        
-        url.searchParams.set("_format" , "application/json+fhir")
-        url.searchParams.set("_summary", "true")
-        url.searchParams.set("_count"  , pageSize + "")
+    if (sortParam === "age") {
+        url.searchParams.set("_sort:" + (sortDir === "asc" ? "desc" : "asc"), "birthdate")
+    } else if (sortParam === "name") {
+        url.searchParams.set("_sort:" + (sortDir === "asc" ? "desc" : "asc"), "family")
+    } else {
+        url.searchParams.set("_sort:" + (sortDir === "asc" ? "desc" : "asc"), sortParam)
+    }
 
-        if (sortParam === "age") {
-            url.searchParams.set("_sort:" + (sortDir === "asc" ? "desc" : "asc"), "birthdate")
-        } else if (sortParam === "name") {
-            url.searchParams.set("_sort:" + (sortDir === "asc" ? "desc" : "asc"), "family")
-        } else {
-            url.searchParams.set("_sort:" + (sortDir === "asc" ? "desc" : "asc"), sortParam)
-        }
+    if (patient) {
+        url.searchParams.set("_id", patient)
+    }
 
-        if (patient) {
-            url.searchParams.set("_id", patient)
-        }
-
-        // console.log("=====>", url.href)
-
-        fetch(url, { mode: "cors" })
-        .then(res => res.json())
-        .then((data: fhir4.Bundle<fhir4.Patient>) => dispatch({ type: "setData", payload: data }))
-        .catch(error => dispatch({ type: "setError", payload: error }))
-        .finally(() => dispatch({ type: "setLoading", payload: false }))
-    }, [ sortParam, sortDir, pageSize, searchText, baseUrl, patient ])
+    const { data, loading, error } = useFetch<fhir4.Bundle<fhir4.Patient>>(url.href)
 
     const next = data?.link?.find(l => l.relation === "next")?.url
     const prev = data?.link?.find(l => l.relation === "previous")?.url
@@ -199,9 +173,6 @@ export default function PatientPicker() {
                             <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
                             Select Patient
                         </h2>
-                        {/* <div className="text-muted">
-                            FHIR Server: <a target="_blank" rel="noreferrer noopener" href={ pureBaseUrl.href }>{ pureBaseUrl.href }</a>
-                        </div> */}
                     </div>
                 </div>
                 <br/>

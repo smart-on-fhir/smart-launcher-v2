@@ -1,7 +1,9 @@
 
-import { InputHTMLAttributes, useEffect, useState } from "react";
-import { humanName } from "../../lib";
-import "./UserPicker.css";
+import { InputHTMLAttributes } from "react"
+import useFetch                from "../../hooks/useFetch"
+import { humanName }           from "../../lib"
+import "./UserPicker.css"
+
 
 interface UserPickerProps {
     value?: string,
@@ -19,26 +21,18 @@ export default function UserPicker({
     inputProps = {}
 }: UserPickerProps)
 {
-    const [records, setRecords] = useState<fhir4.Practitioner[]>([]);
+    const url = new URL("./Practitioner", fhirServerBaseUrl)
 
-    useEffect(() => {
-        const url = new URL("./Practitioner", fhirServerBaseUrl)
+    if (limit) {
+        url.searchParams.set("_count", limit + "")
+    }
 
-        if (limit) {
-            url.searchParams.set("_count", limit + "")
-        }
+    const { data: bundle, error, loading } = useFetch<fhir4.Bundle<fhir4.Practitioner>>(url.href)
+    const records = bundle?.entry?.map(p => p.resource!) || []
 
-        fetch(url).then(res => res.json()).then(
-            (bundle: fhir4.Bundle<fhir4.Practitioner>) => {
-                if (!bundle.entry) {
-                    console.error("No practitioners found")
-                } else {
-                    setRecords(bundle.entry!.map(p => p.resource!))
-                }
-            },
-            e => console.error("No practitioners found. " + e)
-        )
-    }, [fhirServerBaseUrl, limit]);
+    if (error) {
+        console.error("No practitioners found. " + error)
+    }
 
     return (
         <div className="dropdown user-picker open">
@@ -48,7 +42,12 @@ export default function UserPicker({
                 onChange={ e => onChange(e.target.value) }
                 className="form-control"
             />
-            <UserPickerMenu selection={ value } records={records} onChange={list => onChange(list.join(","))} />
+            <UserPickerMenu
+                selection={ value }
+                records={records}
+                onChange={list => onChange(list.join(","))}
+                loading={loading}
+            />
         </div>
     )
 }
@@ -56,11 +55,13 @@ export default function UserPicker({
 function UserPickerMenu({
     selection = "",
     records,
-    onChange
+    onChange,
+    loading
 }: {
     selection?: string,
     records: fhir4.Practitioner[]
     onChange: (list: string[]) => void
+    loading?: boolean
 })
 {
     const ids = selection.trim().split(/\s*,\s*/).filter(Boolean);
@@ -82,14 +83,18 @@ function UserPickerMenu({
             }
         }
     }
+
+    if (loading) {
+        return (
+            <ul className="dropdown-menu">
+                <li className="text-center text-info">Loading...</li>
+            </ul>
+        )
+    }
     
     if (!records.length) {
         return (
-            <ul className="dropdown-menu" style={{
-                minWidth: "100%",
-                maxHeight: "50vh",
-                overflow: "auto"
-            }}>
+            <ul className="dropdown-menu">
                 <li className="text-center text-danger">No Providers Found</li>
             </ul>
         )

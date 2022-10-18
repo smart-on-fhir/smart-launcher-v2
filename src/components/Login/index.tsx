@@ -1,11 +1,13 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import useFetch from "../../hooks/useFetch";
 import { humanName } from "../../lib";
 
 
 export default function Login() {
 
     const [searchParams] = useSearchParams();
+    const [id, setId]    = useState("")
 
     const loginType = String(searchParams.get("login_type") || "")
     const aud       = String(searchParams.get("aud") || "")
@@ -49,11 +51,11 @@ export default function Login() {
         window.location.href = url.href;
     }
 
-    async function fetchUsers(url: string) {
-        const res = await fetch(url)
-        const bundle: fhir4.Bundle<fhir4.Patient|fhir4.Practitioner> = await res.json()
-        if (bundle.entry) {
-            setRecs(bundle.entry.map(e => e.resource!) || [])
+    
+    const { data: bundle, loading } = useFetch<fhir4.Bundle<fhir4.Patient|fhir4.Practitioner>>(fetchUrl)
+    const recs    = bundle?.entry?.map(e => e.resource!) || []
+    const noData  = (!loading && !recs.length)
+    const firstID = recs[0]?.id
         }
         setLoading(false)
     }
@@ -81,7 +83,7 @@ export default function Login() {
 
             <div className="row">
                 <div className="col-sm-12">
-                    { !loading && !recs.length && <div className="alert alert-danger">
+                    { noData && <div className="alert alert-danger">
                         <h5><i className="glyphicon glyphicon-exclamation-sign" /> No { loginType === "provider" ? "Providers" : "Patients"} Found!</h5>
                         <small>Continue without a user, or return to the launch screen to include additional data.</small>
                     </div> }
@@ -122,8 +124,9 @@ export default function Login() {
                                 className="btn btn-success"
                                 style={{ minWidth: "6em" }}
                                 onClick={submit}
-                                disabled={!id}>
-                                { recs.length || loading ? "Login" : "Continue Without User" }
+                                disabled={!id}
+                            >
+                                { noData ? "Continue Without User" : "Login" }
                             </button>
                         </div>
                     </div>
