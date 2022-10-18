@@ -37,10 +37,8 @@ export default function Login() {
         url.searchParams.set("login_success", "1")
         if (loginType === "provider") {
             url.searchParams.set("provider", id)
-            // url.searchParams.delete("patient")
         } else {
             url.searchParams.set("patient", id)
-            // url.searchParams.delete("provider")
         }
         
         window.top?.postMessage({
@@ -76,9 +74,6 @@ export default function Login() {
                         <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
                         { loginType === "provider" ? "Practitioner " : "Patient " } Login
                     </h2>
-                    {/* <div className="text-muted">
-                        FHIR Server: <a target="_blank" rel="noreferrer noopener" href={ aud }>{ aud }</a>
-                    </div> */}
                     <hr/>
                 </div>
             </div>
