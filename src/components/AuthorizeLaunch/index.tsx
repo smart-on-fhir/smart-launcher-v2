@@ -7,18 +7,25 @@ export default function AuthorizeLaunch() {
 
     let [searchParams] = useSearchParams();
 
-    const scopes    = searchParams.get("scope") + ""
+    // openid fhirUser profile offline_access patient/Observation.cruds?category=vital-signs smart/orchestrate_launch launch launch/encounter launch/patient patient/Observation.rs?_security=L,N,R,V user/Encounter.* patient/Encounter.*
+    const scopes = searchParams.get("scope") + ""
     const isPatient = searchParams.get("login_type") !== "provider"
 
-    let read  : string[] = [];
-    let write : string[] = [];
-    let access: string[] = [];
-    let other : string[] = [];
-
     const _scopes = String(scopes || "").trim().split(/\s+/);
-    
+
+    const groups: Record<string, any[]> = {
+        create: [],
+        read  : [],
+        update: [],
+        delete: [],
+        search: [],
+        write : [],
+        other : [],
+        access: []
+    };
+
     if (_scopes.includes("offline_access") && _scopes.includes("online_access")) {
-        access.push(
+        groups.access.push(
             "You have requested both <code>offline_access</code> and <code>online_access</code> scopes. " +
             "Please make sure you only use one of them."
         );
@@ -27,7 +34,7 @@ export default function AuthorizeLaunch() {
     if (_scopes.includes("launch")) {
 
         if (_scopes.includes("launch/Patient")) {
-            access.push(
+            groups.access.push(
                 "You have requested both <code>launch</code> and <code>launch/Patient</code> scopes. " +
                 "You probably only need to use one of them. The <code>launch</code> scope is used " +
                 "in the EHR launch flow while <code>launch/Patient</code> is for the standalone flow."
@@ -35,7 +42,7 @@ export default function AuthorizeLaunch() {
         }
 
         if (_scopes.includes("launch/Encounter")) {
-            access.push(
+            groups.access.push(
                 "You have requested both <code>launch</code> and <code>launch/Encounter</code> scopes. " +
                 "You probably only need to use one of them. The <code>launch</code> scope is used " +
                 "in the EHR launch flow while <code>launch/Encounter</code> is for the standalone flow."
@@ -44,76 +51,32 @@ export default function AuthorizeLaunch() {
     }
 
     _scopes.forEach(scope => {
-        var permissions = scopeToText(scope, isPatient);
-        if (permissions.read) {
-            read.push(permissions.read);
-        }
-        if (permissions.write) {
-            write.push(permissions.write);
-        }
-        if (permissions.access) {
-            access.push(permissions.access);
-        }
-        if (permissions.other) {
-            other.push(permissions.other);
-        }
-        if (permissions.create) {
-            write.push(permissions.create);
-        }
-        if (permissions.update) {
-            write.push(permissions.update);
-        }
-        if (permissions.deletePermission) {
-            other.push(permissions.deletePermission);
-        }
-        if (permissions.search) {
-            other.push(permissions.search);
-        }
+        const permissions = scopeToText(scope, isPatient);
+        if (permissions.read  ) groups.read.  push(permissions.read  );
+        if (permissions.write ) groups.write. push(permissions.write );
+        if (permissions.access) groups.access.push(permissions.access);
+        if (permissions.other ) groups.other. push(permissions.other );
+        if (permissions.create) groups.create.push(permissions.create);
+        if (permissions.update) groups.update.push(permissions.update);
+        if (permissions.delete) groups.delete.push(permissions.delete);
+        if (permissions.search) groups.search.push(permissions.search);
     });
 
-    read   = arrayToUnique(read)
-    write  = arrayToUnique(write)
-    access = arrayToUnique(access)
-    other  = arrayToUnique(other)
-
-    const readListItems  : React.ReactElement[] = []
-    const writeListItems : React.ReactElement[] = []
-    const otherListItems : React.ReactElement[] = []
-    const accessListItems: React.ReactElement[] = []
-    
-    read.forEach(msg => {
-        readListItems.push(
-            <li key={readListItems.length}>
-                <i className="glyphicon glyphicon-ok-sign text-success" /> { msg }
-            </li>
-        )
-    })
-
-    write.forEach(msg => {
-        writeListItems.push(
-            <li key={writeListItems.length}>
-                <i className="glyphicon glyphicon-ok-sign text-warning" /> { msg }
-            </li>
-        )
-    })
-
-    other.forEach(msg => {
-        otherListItems.push(
-            <li key={otherListItems.length}>
-                <i className="glyphicon glyphicon-ok-sign text-info" /> { msg }
-            </li>
-        )
-    })
-    
-    if (!readListItems.length && !writeListItems.length && !otherListItems.length) {
-        return <p><big>Do you want to launch this application?</big></p>
+    for (const key in groups) {
+        groups[key] = arrayToUnique(groups[key])
     }
 
-    access.forEach(msg => {
-        accessListItems.push(
-            <li key={accessListItems.length} dangerouslySetInnerHTML={{ __html: msg }} />
-        )
-    })
+    const listItems: React.ReactElement[] = [];
+
+    ["read", "search", "create", "update", "delete", "write", "other"].forEach(key => {
+        groups[key].forEach((msg, i) => {
+            listItems.push(<li key={ key + "-" + i } dangerouslySetInnerHTML={{ __html: msg }} />)
+        })
+    });
+
+    if (!listItems.length) {
+        return <p><big>Do you want to launch this application? No useful scopes requested!</big></p>
+    }
 
     function submit(approve?: boolean) {
         const url = new URL(searchParams.get("aud")!.replace(/\/fhir$/, "/auth/authorize"))
@@ -124,45 +87,26 @@ export default function AuthorizeLaunch() {
 
     return (
         <div className="container authorize-app">
-
             <div className="row">
-                <div className="col-sm-10 col-sm-offset-1">
+                <div className="col-xs-12 col-md-offset-1 col-md-10">
                     <h2 className="page-header">
                         <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
                         <span className="text-primary">Authorize App Launch</span>
                     </h2>
                 </div>
             </div>
-
             <div className="row">
                 <div className="col-xs-12 col-md-offset-1 col-md-10">
-                    { accessListItems.length  > 0 && <div className="alert alert-warning access-alert">
+                    { groups.access.length > 0 && <div className="alert alert-warning access-alert">
                         <b className="glyphicon glyphicon-info-sign pull-left" style={{ margin: "7px -7px -7px 7px" }}/>
-                        <ul id="access-note">{ accessListItems  }</ul>
+                        <ul id="access-note">{ groups.access.map((msg, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: msg }} />)) }</ul>
                     </div> }
                     
                     <div className="panel-body">
 
-                        { readListItems.length  > 0 && <>
-                            <h4 className="read text-muted">
-                                <b className="label label-success">Read</b> This application is requesting permission to read:
-                            </h4>
-                            <ul className="read">{ readListItems  }</ul>
-                        </> }
-
-                        { writeListItems.length  > 0 && <>
-                            <h4 className="write text-muted">
-                                <b className="label label-warning">Write</b> This application is requesting permission to write:
-                            </h4>
-                            <ul className="read">{ writeListItems  }</ul>
-                        </> }
-
-                        { otherListItems.length  > 0 && <>
-                            <h4 className="other text-muted">
-                                <b className="label label-info">Other</b> This application is requesting permission to:
-                            </h4>
-                            <ul className="other">{ otherListItems  }</ul>
-                        </> }
+                        <h4 className="other text-muted">This application is requesting permission to:</h4>
+                        
+                        <ul>{ listItems  }</ul>
                     </div>
 
                     <hr />
@@ -193,46 +137,28 @@ function scopeToText(scope: string, isPatient?: boolean) {
         other : "",
         create: "",
         update: "",
-        deletePermission: "",
+        delete: "",
         search: ""
     };
 
-    if (scope === "smart/orchestrate_launch") {
-        out.other = "Allow this application to launch other SMART applications.";
-        return out;
-    }
-
-    if (scope === "profile" || scope === "fhirUser") {
-        out.read = "Your profile information";
-        return out;
-    }
-
-    if (scope === "launch") { 
-        out.read = "All data about the selected patient and encounter";
-        return out;
-    }
-
-    if (scope === "launch/patient") { 
-        out.read = "All data about the selected patient";
-        return out;
-    }
-
-    if (scope === "launch/encounter") {
-        out.read = "All data about the selected encounter";
-        return out;
-    }
-
-    if (scope === "online_access") {
-        out.access = "The application will be able to access data while you are online " +
-            "(<code>online access</code>) without having to be re-launched when its access token expires.";
-        return out;
+    switch (scope) {
+        case "smart/orchestrate_launch":
+            return { ...out, other: '<i class="glyphicon glyphicon-ok-sign text-warning"></i>&nbsp;<b class="text-warning">Launch</b> other SMART applications' }
+        case "profile":
+        case "fhirUser":
+            return { ...out, read: '<i class="glyphicon glyphicon-ok-sign text-success"></i>&nbsp;<b class="text-success">Read</b> our profile information' }
+        case "launch":
+            return { ...out, read: '<i class="glyphicon glyphicon-ok-sign text-success"></i>&nbsp;<b class="text-success">Read</b> all data about the selected patient and encounter' }
+        case "launch/patient":
+            return { ...out, read: '<i class="glyphicon glyphicon-ok-sign text-success"></i>&nbsp;<b class="text-success">Read</b> all data about the selected patient' }
+        case "launch/encounter":
+            return { ...out, read: '<i class="glyphicon glyphicon-ok-sign text-success"></i>&nbsp;<b class="text-success">Read</b> all data about the selected encounter' }
+        case "online_access":
+            return { ...out, access: 'The application will be able to access data while you are online (<code>online access</code>) without having to be re-launched when its access token expires.' }
+        case "offline_access":
+            return { ...out, access: "The application will be able to access data until you revoke permission (<code>offline access</code>)." }
     }
     
-    if (scope === "offline_access") {
-        out.access = "The application will be able to access data until you revoke permission (<code>offline access</code>).";
-        return out;
-    }
-
     const scopeParts = scope.split(/[/.]/);
 
     if (scopeParts.length < 2) {
@@ -242,11 +168,11 @@ function scopeToText(scope: string, isPatient?: boolean) {
     if (scopeParts.length === 2 || scopeParts[2] === 'read' || scopeParts[2] === 'write' || scopeParts[2] === '*') {
 
         if (scopeParts[1].toLowerCase() === "patient")
-            scopeParts[1] = "Demographic";
+            scopeParts[1] = "demographic";
 
         var text;
         if (!isPatient) {
-            text = (scopeParts[1] === "*") ? "All" : scopeParts[1];
+            text = (scopeParts[1] === "*") ? "all" : "<code>" + scopeParts[1] + "</code>";
             if (scopeParts[0] === "user") {
                 text += " data you have access to in the EHR system";
             } else {
@@ -254,53 +180,80 @@ function scopeToText(scope: string, isPatient?: boolean) {
             }
         } else {
             if 	(scopeParts[1] === "*") {
-                text = "Your medical information";
+                text = "your medical information";
             } else {
-                text = 'Your information of type "' + scopeParts[1] + '"';
+                text = 'your information of type "' + scopeParts[1] + '"';
             }
         }
 
         if (scopeParts[2] === "write" || scopeParts[2] === "*") {
-            out.write = text;
+            out.write = '<i class="glyphicon glyphicon-ok-sign text-danger"></i>&nbsp;<b class="text-danger">Write</b> ' + text;
         }
 
         if (scopeParts[2] === "read" || scopeParts[2] === "*") {
-            out.read = text;
+            out.read = '<i class="glyphicon glyphicon-ok-sign text-success"></i>&nbsp;<b class="text-success">Read</b> ' + text;
         }
 
         return out;
     }
 
-    // var tags = "";
+    var tags = "";
 
-    // if (scopeParts[2].includes('?')) {
-    //     var accessAndTags = scopeParts[2].split(/[?&]/);
-    //     scopeParts[2] = accessAndTags[0];
+    if (scopeParts[2].includes('?')) {
+        var accessAndTags = scopeParts[2].split(/[?&]/);
+        scopeParts[2] = accessAndTags[0];
+        accessAndTags = scope.split(/[?&]/);
+        tags = tagsToString(accessAndTags);
+    }
 
-    //     accessAndTags = scope.split(/[?&]/);
-    //     tags = tagsToString(accessAndTags);
-    // }
+    if (scopeParts[2].includes('c')) {
+        out.create = `<i class="glyphicon glyphicon-ok-sign text-danger"></i>&nbsp;<b class="text-danger">Create</b> new <code>${scopeParts[1]}</code> records${tags}`;
+    }
 
-    // if (scopeParts[2].includes('c')) {
-    //     out.create = `New <code>${scopeParts[1]}</code> records${tags}`;
-    // }
+    if (scopeParts[2].includes('u')) {
+        out.update = `<i class="glyphicon glyphicon-ok-sign text-danger"></i>&nbsp;<b class="text-danger">Update</b> existing <code>${scopeParts[1]}</code> records${tags}`;
+    }
 
-    // if (scopeParts[2].includes('u')) {
-    //     out.update = `Changes to existing <code>${scopeParts[1]}</code> records${tags}`;
-    // }
+    if (scopeParts[2].includes('s')) {
+        out.search = `<i class="glyphicon glyphicon-ok-sign text-info"></i>&nbsp;<b class="text-info">Search</b> for <code>${scopeParts[1]}</code> records${tags}`;
+    }
 
-    // if (scopeParts[2].includes('s')) {
-    //     out.search = `Search for <code>${scopeParts[1]}</code> records${tags}`;
-    // }
+    if (scopeParts[2].includes('r')) {
+        out.read = `<i class="glyphicon glyphicon-ok-sign text-success"></i>&nbsp;<b class="text-success">Read</b> <code>${scopeParts[1]}</code> records${tags}`;
+    }
 
-    // if (scopeParts[2].includes('r')) {
-    //     out.read = `<code>${scopeParts[1]}</code> records${tags}`;
-    // }
-
-    // if (scopeParts[2].includes('d')) {
-    //     out.delete = `Delete <code>${scopeParts[1]}</code> records${tags}`;
-    // }
+    if (scopeParts[2].includes('d')) {
+        out.delete = `<i class="glyphicon glyphicon-ok-sign text-danger"></i>&nbsp;<b class="text-danger">Delete</b> <code>${scopeParts[1]}</code> records${tags}`;
+    }
 
     return out;
+}
+
+function tagsToString(accessAndTags: any) {
+    if (!accessAndTags) {
+        return "";
+    }
+
+    if (accessAndTags.length < 2) {
+        return "";
+    }
+
+    var tags = "";
+    accessAndTags.forEach((val: any, index: any) => {
+        if (index === 0) { return; }
+        if (val.includes('=')) {
+            var parts = val.split(/[=]/);
+            if (parts[1].includes('|')) {
+                parts[1] = parts[1].split('|')[1];
+            }
+            if (index === 1) {
+                tags += ` with <code>${parts[0]}</code> of <code>${parts[1]}</code>`;
+            } else {
+                tags += ` and <code>${parts[0]}</code> of <code>${parts[1]}</code>`;
+            }
+        }
+    });
+
+    return tags;
 }
 
