@@ -37,7 +37,7 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         launchTypeIndex,
         params.patient       || "",
         params.provider      || "",
-        params.encounter     || "",
+        params.encounter     || "AUTO",
         params.skip_login    ? 1 : 0,
         params.skip_auth     ? 1 : 0,
         params.sim_ehr && !params.launch_type.includes("standalone") ? 1 : 0,

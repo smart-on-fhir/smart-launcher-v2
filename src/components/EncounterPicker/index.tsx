@@ -289,9 +289,6 @@ export default function EncounterPicker() {
                             <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
                             Select Encounter { patientData && <span className="text-muted"> <span style={{fontWeight: "normal"}}>for</span> { humanName(patientData) }</span> }
                         </h2>
-                        {/* <div className="text-muted">
-                            FHIR Server: <a target="_blank" rel="noreferrer noopener" href={ cleanBaseUrl.href }>{ cleanBaseUrl.href }</a>
-                        </div> */}
                     </div>
                 </div>
                 <br/>
@@ -309,7 +306,7 @@ export default function EncounterPicker() {
                                 </tr>
                             </thead>
                             <tbody>
-                                { loading && !data && <tr id="message-loading" className="no-hover">
+                                { loading && <tr id="message-loading" className="no-hover">
                                     <td colSpan={6} style={{ textAlign: "center", padding: 40 }}>
                                         Loading...
                                     </td>
