@@ -208,17 +208,17 @@ function scopeToText(scope: string, isPatient?: boolean) {
     }
 
     if (scope === "launch") { 
-        out.read = "The current patient and encounter selection in the EHR system";
+        out.read = "All data about the selected patient and encounter";
         return out;
     }
 
     if (scope === "launch/patient") { 
-        out.read = "The current patient selection";
+        out.read = "All data about the selected patient";
         return out;
     }
 
     if (scope === "launch/encounter") {
-        out.read = "The current encounter selection";
+        out.read = "All data about the selected encounter";
         return out;
     }
 
