@@ -68,3 +68,7 @@ hr {
 textarea {
     resize: vertical;
 }
+
+textarea.invalid, textarea.invalid:focus {
+    border-color: #C00;
+}

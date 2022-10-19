@@ -326,7 +326,6 @@ function ClientRegistrationUI() {
                                     <b role="tab" className="text-primary">JWKS Inline</b>
                                 </li>
                             </ul>
-                            {/* <label htmlFor="jwks_url">JWKS URL</label> */}
                             { query.jwks_tab === "0" && (
                                 <>
                                     <input
@@ -347,7 +346,20 @@ function ClientRegistrationUI() {
                                         placeholder="JWKS as json"
                                         className="form-control"
                                         value={ launch.jwks }
-                                        onChange={ e => setQuery({ jwks: e.target.value }) }
+                                        spellCheck={ false }
+                                        onChange={ e => {
+                                            try {
+                                                JSON.parse(e.target.value)
+                                                e.target.setCustomValidity("")
+                                                e.target.reportValidity()
+                                                e.target.classList.remove("invalid")
+                                            } catch {
+                                                e.target.setCustomValidity("This is not valid JSON")
+                                                e.target.reportValidity()
+                                                e.target.classList.add("invalid")
+                                            }
+                                            setQuery({ jwks: e.target.value })
+                                        }}
                                         style={{ whiteSpace: "pre", fontFamily: "monospace", fontSize: "small" }}
                                     />
                                     <span className="help-block small">
