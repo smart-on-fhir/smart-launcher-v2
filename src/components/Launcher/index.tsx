@@ -258,41 +258,7 @@ function ClientRegistrationUI() {
             </div>
 
             <div className="row">
-                <div className="col-sm-6">
-                    <label htmlFor="sim_error" className="text-primary">Simulated Error</label>
-                    <select
-                        id="sim_error"
-                        className="form-control"
-                        value={ launch.auth_error }
-                        onChange={ e => setQuery({ auth_error: e.target.value as SMART.SimulatedError }) }
-                    >
-                        <option value="">None</option>
-
-                        <optgroup label="During the authorize request">
-                            <option value="auth_invalid_client_id">Simulate invalid client_id</option>
-                            <option value="auth_invalid_redirect_uri">Simulate invalid redirect_uri</option>
-                            <option value="auth_invalid_scope">Simulate invalid scope</option>
-                            <option value="auth_invalid_client_secret">Simulate invalid client_secret</option>
-                        </optgroup>
-
-                        <optgroup label="During the token request">
-                            <option value="token_invalid_token">Simulate invalid client token</option>
-                            <option value="token_expired_refresh_token">Simulate expired refresh token</option>
-                            <option value="token_expired_registration_token">Simulate expired client token</option>
-                            <option value="token_invalid_scope">Simulate invalid scope</option>
-                            <option value="token_invalid_jti">Simulate invalid jti (for backend services)</option>
-                        </optgroup>
-                        
-                        <optgroup label="During FHIR requests">
-                            <option value="request_invalid_token">Simulate invalid access token</option>
-                            <option value="request_expired_token">Simulate expired access token</option>
-                        </optgroup>
-                    </select>
-                    <span className="help-block small">
-                        Force the server to throw certain type of error (useful for manual testing).
-                    </span>
-                </div>
-                <div className="col-sm-6">
+                <div className="col-sm-6 col-sm-offset-6">
 
                     { query.cvm === "client-confidential-symmetric" && (
                         <div className="form-group">
@@ -461,22 +427,61 @@ function LaunchUI() {
                         </span>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="fhir_version" className="text-primary">FHIR Version</label>
-                        <select
-                            name="fhir_version"
-                            id="fhir_version"
-                            className="form-control"
-                            value={ query.fhir_version }
-                            onChange={ e => setQuery({ fhir_version: e.target.value, patient: "", provider: "" }) }>
-                            <option value="r4" disabled={!ENV.FHIR_SERVER_R4}>R4</option>
-                            <option value="r3" disabled={!ENV.FHIR_SERVER_R3}>R3 (STU3)</option>
-                            <option value="r2" disabled={!ENV.FHIR_SERVER_R2}>R2 (DSTU2)</option>
-                        </select>
-                        <span className="help-block small">
-                            <div>Open FHIR Server Endpoint: <a href={`https://${ query.fhir_version}.smarthealthit.org`} target="_blank" rel="noreferrer noopener">https://{ query.fhir_version }.smarthealthit.org</a></div>
-                            <div>Protected FHIR Server Endpoint: <a href={`http://localhost:8443/v/${ query.fhir_version }/fhir`} target="_blank" rel="noreferrer noopener">http://localhost:8443/v/{ query.fhir_version }/fhir</a></div>
-                        </span>
+                    <div className="row">
+                        <div className="col-md-6">
+                            <div className="form-group">
+                                <label htmlFor="fhir_version" className="text-primary">FHIR Version</label>
+                                <select
+                                    name="fhir_version"
+                                    id="fhir_version"
+                                    className="form-control"
+                                    value={ query.fhir_version }
+                                    onChange={ e => setQuery({ fhir_version: e.target.value, patient: "", provider: "" }) }>
+                                    <option value="r4" disabled={!ENV.FHIR_SERVER_R4}>R4</option>
+                                    <option value="r3" disabled={!ENV.FHIR_SERVER_R3}>R3 (STU3)</option>
+                                    <option value="r2" disabled={!ENV.FHIR_SERVER_R2}>R2 (DSTU2)</option>
+                                </select>
+                                <span className="help-block small">
+                                    Select what FHIR version your app should work with
+                                </span>
+                            </div>
+                        </div>
+                        <div className="col-md-6">
+                            <div className="form-group">
+                                <label htmlFor="sim_error" className="text-primary">Simulated Error</label>
+                                <select
+                                    id="sim_error"
+                                    className="form-control"
+                                    value={ launch.auth_error }
+                                    onChange={ e => setQuery({ auth_error: e.target.value as SMART.SimulatedError }) }
+                                >
+                                    <option value="">None</option>
+
+                                    <optgroup label="During the authorize request">
+                                        <option value="auth_invalid_client_id">invalid client_id</option>
+                                        <option value="auth_invalid_redirect_uri">invalid redirect_uri</option>
+                                        <option value="auth_invalid_scope">invalid scope</option>
+                                        <option value="auth_invalid_client_secret">invalid client_secret</option>
+                                    </optgroup>
+
+                                    <optgroup label="During the token request">
+                                        <option value="token_invalid_token">invalid client token</option>
+                                        <option value="token_expired_refresh_token">expired refresh token</option>
+                                        <option value="token_expired_registration_token">expired client token</option>
+                                        <option value="token_invalid_scope">invalid scope</option>
+                                        <option value="token_invalid_jti">invalid jti (for backend services)</option>
+                                    </optgroup>
+                                    
+                                    <optgroup label="During FHIR requests">
+                                        <option value="request_invalid_token">invalid access token</option>
+                                        <option value="request_expired_token">expired access token</option>
+                                    </optgroup>
+                                </select>
+                                <span className="help-block small">
+                                    Force the server to throw certain type of error (useful for manual testing).
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="form-group">
@@ -534,7 +539,6 @@ function LaunchUI() {
                         )}
                     </div>
                 </div>
-
                 <div className="col-sm-6">
                     <div className="form-group">
                         <label htmlFor="patient" className="text-primary">Patient(s)</label>
@@ -555,7 +559,7 @@ function LaunchUI() {
                             the launch flow.
                         </span>
                     </div>
-                    
+
                     { launch.launch_type !== "patient-portal" && launch.launch_type !== "patient-standalone" && (
                         <div className="form-group">
                             <label htmlFor="provider" className="text-primary">Provider(s)</label>
@@ -578,7 +582,7 @@ function LaunchUI() {
                             </span>
                         </div>
                     )}
-                
+
                     <div className="form-group">
                         <label htmlFor="encounter" className="text-primary">Encounter</label>
                         <select
@@ -591,6 +595,9 @@ function LaunchUI() {
                             <option value="AUTO">Select the most recent encounter if available</option>
                             <option value="MANUAL">Manually select an encounter if available</option>
                         </select>
+                        <span className="help-block small">
+                            How to select the current Encounter
+                        </span>
                     </div>
                 </div>
             </div>
