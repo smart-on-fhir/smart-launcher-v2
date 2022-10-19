@@ -1,4 +1,5 @@
-import { InputHTMLAttributes } from "react"
+import { InputHTMLAttributes, useState } from "react"
+import Modal from "../Modal"
 
 declare global {
     var ENV: {
@@ -129,9 +130,11 @@ interface PatientBrowserConfig {
     }
 }
 
+type FhirVersion = "r2" | "r3" | "r4"
+
 interface PatientInputProps {
     value?: string
-    fhirVersion: "r2" | "r3" | "r4"
+    fhirVersion: FhirVersion
     onChange: (list: string) => void
     inputProps?: Omit<InputHTMLAttributes<HTMLInputElement>, "value"|"onChange"|"className"|"type">
 }
@@ -143,8 +146,10 @@ export default function PatientInput({
     fhirVersion
 } : PatientInputProps)
 {
+    const [pickerOpen, setPickerOpen] = useState(false)
     return (
         <div className="dropdown">
+            { pickerOpen && <PatientPicker onClose={() => setPickerOpen(false)} fhirVersion={fhirVersion} onChange={onChange} selection={value || ""} /> }
             <div className="input-group">
                 <input
                     {...inputProps}
@@ -158,12 +163,7 @@ export default function PatientInput({
                         className="btn btn-default"
                         type="button"
                         title="Open patient browser"
-                        onClick={() => {
-                            selectPatients({
-                                selection: value || "",
-                                fhirVersion
-                            }).then(sel => onChange(sel))
-                        }}
+                        onClick={() => setPickerOpen(true)}
                     >
                         <i className="glyphicon glyphicon-new-window text-primary"/>
                     </button>
@@ -173,129 +173,141 @@ export default function PatientInput({
     )
 }
 
-/**
- * Opens the patient browser in popup window to select some patients
- * @param selection (optional) Comma-separated list of patient IDs
- * to be pre-selected. This is a way to pass the current selection (if any) that
- * the host app maintains. The user will see these IDs as selected and will be
- * able to make changes to the selection.
- * @return A promise that will eventually be resolved with the new selection.
- */
-async function selectPatients({
+function PatientPicker({
     selection,
-    height = 700,
-    width = 1000,
-    fhirVersion
-}: {
-    /** Comma-separated list of currently selected patient IDs */
-    selection: string,
-    /** Popup height */
-    height?: number
-    /** Popup width */
-    width?: number
-    /** Which FHIR server to browse */
-    fhirVersion: "r2" | "r3" | "r4"
-}): Promise<string> {
+    onChange,
+    fhirVersion,
+    onClose
+} : {
+    selection: string
+    fhirVersion: FhirVersion
+    onClose: () => void
+    onChange: (sel: string) => void
+})
+{
+    return (
+        <Modal onClose={onClose}>
+            <div className="modal-dialog full">
+                <div className="modal-content">
+                    <div className="modal-header color-danger">
+                        <button type="button" className="close" onClick={onClose}>
+                            <span aria-hidden="true">×</span>
+                        </button>
+                        <b className="text-primary">Select Patient(s)</b>
+                    </div>
+                    <div className="modal-body">
+                        <iframe id="patient-picker-frame" src={ getPickerUrl({ selection, fhirVersion }) } onLoad={
+                            e => {
+                                connectToPickerWindow(
+                                    getPickerOrigin(),
+                                    fhirVersion,
+                                    // @ts-ignore
+                                    e.target.contentWindow,
+                                    sel => {
+                                        if (sel || sel === "") onChange(sel)
+                                        onClose()
+                                    }
+                                )
+                            }
+                        }/>
+                    </div>
+                </div>
+            </div>
+        </Modal>
+    )
+}
 
-    // Compute the PICKER_ORIGIN -----------------------------------------------
-    let PICKER_ORIGIN = ENV.PICKER_ORIGIN;
+function getPickerOrigin() {
+    let o = ENV.PICKER_ORIGIN;
     if (window.location.protocol === "https:") {
-        PICKER_ORIGIN = PICKER_ORIGIN.replace(/^https?:/, "https:");
+        o = o.replace(/^https?:/, "https:");
     }
+    return o
+}
+
+function getPickerUrl({
+    fhirVersion,
+    selection
+}: {
+    selection: string
+    fhirVersion: FhirVersion
+})
+{
+    // Compute the PICKER_ORIGIN -----------------------------------------------
+    let PICKER_ORIGIN = getPickerOrigin()
 
     // Build the picker URL ----------------------------------------------------
     let path = PICKER_ORIGIN + "/index.html?_=" + Date.now();
 
-    // Build a picker config ---------------------------------------------------
-    const pickerConfig: PatientBrowserConfig = {
-        submitStrategy: "manual",
-        outputMode    : "id-list",
-        timeout       : 30000
-    }
+    path += "&config=" + fhirVersion;
 
-    // Other configurations based on FHIR version ------------------------------
-    switch (fhirVersion) {
-        case "r2":
-            path += "&config=r2";
-            pickerConfig.server = {
-                type: "DSTU-2",
-                url : ENV.FHIR_SERVER_R2
-            };
-        break;
-        case "r3":
-            path += "&config=r3";
-            pickerConfig.server = {
-                type: "STU-3",
-                url : ENV.FHIR_SERVER_R3
-            };
-        break;
-        case "r4":
-            path += "&config=r4";
-            pickerConfig.server = {
-                type: "R4",
-                url : ENV.FHIR_SERVER_R4
-            };
-        break;
-        default:
-            throw new Error(`Invalid fhirVersion "${fhirVersion}"`)
-    }
-
-    // Pass in the current selection if any ------------------------------------
     if (selection) {
         path += "#/?_selection=" + encodeURIComponent(selection);
     }
 
-    // Open the popup and promise a selection ----------------------------------
-    return new Promise((resolve, reject) => {
+    return path
+}
 
-        if (window.patientPicker && !window.patientPicker.closed) {
-            window.patientPicker.close()
-        }
+function getPickerConfig(fhirVersion: FhirVersion): PatientBrowserConfig
+{
+    const pickerConfig: PatientBrowserConfig = {
+        submitStrategy: "automatic",
+        outputMode    : "id-list",
+        timeout       : 30000
+    };
 
-        setTimeout(() => {
-            window.patientPicker = window.open(path, "picker", [
-                "height=" + height,
-                "width="  + width,
-                "menubar=0",
-                "resizable=1",
-                "status=0",
-                "top="  + Math.round((window.screen.height - height) / 2),
-                "left=" + Math.round((window.screen.width  - width ) / 2)
-            ].join(","));
+    switch (fhirVersion) {
+        case "r2":
+            pickerConfig.server = {
+                type: "DSTU-2",
+                url : ENV.FHIR_SERVER_R2
+            }
+        break;
+        case "r3":
+            pickerConfig.server = {
+                type: "STU-3",
+                url : ENV.FHIR_SERVER_R3
+            }
+        break;
+        case "r4":
+            pickerConfig.server = {
+                type: "R4",
+                url : ENV.FHIR_SERVER_R4
+            }
+        break;
+    }
 
-            // Perhaps we have a PopUp window blocker?
-            if (!window.patientPicker) {
-                window.alert("Popup window blocked")
-                return reject(new Error("Popup window blocked"))
+    return pickerConfig
+}
+
+function connectToPickerWindow(pickerOrigin: string, fhirVersion: FhirVersion, win: Window, onClose: (data: any) => void)
+{
+    const pickerConfig = getPickerConfig(fhirVersion)
+
+    // The function that handles incoming messages
+    function onMessage(e: MessageEvent) {
+
+        // only if the message is coming from the patient picker
+        if (e.origin === pickerOrigin) {
+
+            // Send our custom configuration options if when the patient browser
+            // says it is ready to handle it
+            if (e.data.type === 'ready') {
+                win.postMessage({ type: 'config', data: pickerConfig }, '*');
             }
 
-            // The function that handles incoming messages
-            function onMessage(e: MessageEvent) {
+            // When the picker requests to be closed:
+            // 1. Stop listening for messages
+            // 2. Close the popup window
+            // 3. Resolve the promise with the new selection (if any)
+            if (e.data.type === 'result' || e.data.type === 'close') {
+                window.removeEventListener('message', onMessage);
+                onClose(e.data.data);
+            }
+        }
+    }
 
-                // only if the message is coming from the patient picker
-                if (e.origin === PICKER_ORIGIN) {
-
-                    // Send our custom configuration options if when the patient browser
-                    // says it is ready to handle it
-                    if (e.data.type === 'ready') {
-                        console.log("Sending config:", pickerConfig)
-                        window.patientPicker!.postMessage({ type: 'config', data: pickerConfig }, '*');
-                    }
-
-                    // When the picker requests to be closed:
-                    // 1. Stop listening for messages
-                    // 2. Close the popup window
-                    // 3. Resolve the promise with the new selection (if any)
-                    if (e.data.type === 'result' || e.data.type === 'close') {
-                        window.removeEventListener('message', onMessage);
-                        window.patientPicker!.close();
-                        resolve(e.data.data);
-                    }
-                }
-            };
-
-            // Now just wait for the user to interact with the patient picker
-            window.addEventListener('message', onMessage);
-        }, 0)
-    });
+    // Now just wait for the user to interact with the patient picker
+    window.addEventListener('message', onMessage);
 }
+

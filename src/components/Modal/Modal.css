@@ -1,0 +1,30 @@
+.modal {
+  display   : block;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.modal:empty {
+  pointer-events: none;
+  transform     : scale3d(0, 0, 0);
+  background    : rgba(0, 0, 0, 0);
+  transition    : background 0.5s, transform 0.1s linear 0.51s;
+}
+
+.modal-body > iframe {
+  width : 100%;
+  height: 100%;
+  border: 1px solid #999;
+  border-radius: 3px;
+}
+
+.modal-dialog.full {
+  width : calc(100vw - 30px);
+  margin: 15px;
+}
+
+.modal-dialog.full iframe {
+  width : 100%;
+  height: calc(100vh - 120px);
+  border: 1px solid #999;
+  border-radius: 3px;
+}
