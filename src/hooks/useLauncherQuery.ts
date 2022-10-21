@@ -5,7 +5,7 @@ import { decode, encode }  from "../isomorphic/codec"
 
 interface LauncherState extends Omit<Partial<LauncherQuery>, "launch">, SMART.LaunchParams {}
 
-interface LauncherQuery {
+export interface LauncherQuery {
     launch_url   : string
     fhir_version : string
     tab          : string

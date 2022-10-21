@@ -1,10 +1,11 @@
 import { SMART }        from "../../../"
 import { encode }       from "../../isomorphic/codec"
 import pkg              from "../../../package.json"
-import useLauncherQuery from "../../hooks/useLauncherQuery"
+import useLauncherQuery, { LauncherQuery } from "../../hooks/useLauncherQuery"
 import UserPicker       from "../UserPicker"
 import PatientInput     from "../PatientInput"
 import { copyElement }  from "../../lib"
+import { useEffect, useRef } from "react"
 
 
 const launchTypes = [
@@ -47,6 +48,37 @@ const DEFAULT_LAUNCH_PARAMS: SMART.LaunchParams = {
     redirect_uris: "",
     client_id    : "",
     client_secret: ""
+}
+
+function getValidationErrors(launch: SMART.LaunchParams, query: LauncherQuery) {
+
+    const { launch_type } = launch
+    const { launch_url } = query
+    const isStandaloneLaunch = launch_type.includes("standalone");
+
+    let validationErrors: string[] = [];
+    if (!isStandaloneLaunch) {
+        if (!launch_url) {
+            validationErrors.push("Missing app launch URL")
+        }
+        else if (!launch_url.match(/^https?:\/\/.+/)) {
+            validationErrors.push("Invalid app launch URL")
+        }
+    }
+    try {
+        JSON.parse(launch.jwks || "null")
+    } catch {
+        validationErrors.push("Invalid JWKS JSON")
+    }
+
+    if (launch.jwks_url) {
+        try {
+            new URL(launch.jwks_url)
+        } catch {
+            validationErrors.push("Invalid JWKS URL")
+        }   
+    }
+    return validationErrors
 }
 
 export default function Launcher() {
@@ -120,21 +152,8 @@ export default function Launcher() {
         userLaunchUrl = new URL(`/ehr?app=${encodeURIComponent(userLaunchUrl.href)}`, origin);
     }
 
-    let validationError: string[] = [];
-    if (!isStandaloneLaunch) {
-        if (!launch_url) {
-            validationError.push("Missing app launch URL")
-        }
-        else if (!launch_url.match(/^https?:\/\/.+/)) {
-            validationError.push("Invalid app launch URL")
-        }
-    }
-    try {
-        JSON.parse(launch.jwks || "null")
-    } catch {
-        validationError.push("Invalid JWKS JSON")
-    }
-
+    let validationErrors = getValidationErrors(launch, query);
+    
     return (
         <div className="container">
             <h1 className="text-primary">
@@ -155,8 +174,8 @@ export default function Launcher() {
             { tab === "0" && <LaunchTab /> }
             { tab === "1" && <ClientRegistrationTab /> }
             <div className="text-danger">
-                { validationError.length ?
-                    <><i className="glyphicon glyphicon-exclamation-sign"/> {validationError.join("; ")}</> :
+                { validationErrors.length ?
+                    <><i className="glyphicon glyphicon-exclamation-sign"/> {validationErrors.join("; ")}</> :
                     <>&nbsp;</>
                 }
             </div>
@@ -180,24 +199,26 @@ export default function Launcher() {
                             <span className="input-group-btn">
                                 { isStandaloneLaunch ? 
                                     <button className="btn btn-primary" onClick={() => copyElement("#launch-url")}>Copy</button> :
-                                    <a
-                                        id="ehr-launch-url"
-                                        href={userLaunchUrl.href}
-                                        target="_blank"
-                                        rel="noreferrer noopener"
-                                        className={"btn btn-primary" + (validationError.length ? " disabled": "")}>Launch</a>
-                                }
+                                    validationErrors.length ? 
+                                        <button className="btn btn-default" disabled>Launch</button> :
+                                        <a
+                                            id="ehr-launch-url"
+                                            href={userLaunchUrl.href}
+                                            target="_blank"
+                                            rel="noreferrer noopener"
+                                            className={"btn btn-primary" + (validationErrors.length ? " disabled": "")}>
+                                            Launch
+                                        </a> }
                             </span>
                         </div>
                     </div>
                     <div style={{ flex: "1 1 0", marginLeft: 5 }}>
-                        <a
-                            href={sampleLaunchUrl.href}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className={"btn btn-default" + (validationError.length ? " disabled" : "")}>
+                        { validationErrors.length ? 
+                            <button className="btn btn-default" disabled>Launch Sample App</button> :
+                            <a href={sampleLaunchUrl.href} target="_blank" rel="noreferrer noopener" className="btn btn-default">
                                 <span className="text-success">Launch Sample App</span>
                             </a>
+                        }
                     </div>
                 </div>
                 { isStandaloneLaunch ?
@@ -232,12 +253,21 @@ function ClientRegistrationTab() {
 
     const { launch, setQuery, query } = useLauncherQuery()
 
+    const jwksTextarea = useRef<HTMLTextAreaElement>(null)
+
     let jwksError = ""
     try {
         JSON.parse(launch.jwks || "null")
     } catch {
         jwksError = "This is not valid JSON"
     }
+
+    useEffect(() => {
+        if (jwksTextarea.current) {
+            jwksTextarea.current.setCustomValidity(jwksError)
+            jwksTextarea.current.reportValidity()
+        }
+    }, [jwksError])
 
     return (
         <>
@@ -389,11 +419,8 @@ function ClientRegistrationTab() {
                                         className={ "form-control" + (jwksError ? " invalid" : "")}
                                         value={ launch.jwks }
                                         spellCheck={ false }
-                                        onChange={ e => {
-                                            e.target.setCustomValidity(jwksError)
-                                            e.target.reportValidity()
-                                            setQuery({ jwks: e.target.value })
-                                        }}
+                                        ref={ jwksTextarea }
+                                        onChange={ e => setQuery({ jwks: e.target.value })}
                                         style={{ whiteSpace: "pre", fontFamily: "monospace", fontSize: "small" }}
                                     />
                                     <span className="help-block small">

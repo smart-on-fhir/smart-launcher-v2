@@ -72,3 +72,8 @@ textarea {
 textarea.invalid, textarea.invalid:focus {
     border-color: #C00;
 }
+
+a.disabled {
+    pointer-events: none;
+    filter: grayscale();
+}
