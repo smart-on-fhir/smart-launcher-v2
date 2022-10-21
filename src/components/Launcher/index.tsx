@@ -7,6 +7,48 @@ import PatientInput     from "../PatientInput"
 import { copyElement }  from "../../lib"
 
 
+const launchTypes = [
+    {
+        name: "Provider EHR Launch",
+        description: "Practitioner opens the app from within an EHR",
+        value: "provider-ehr"
+    },
+    {
+        name: "Patient Portal Launch",
+        description: "Patient opens the app from within a patient portal",
+        value: "patient-portal"
+    },
+    {
+        name: "Provider Standalone Launch",
+        description: "Practitioner opens the app directly and connects to FHIR",
+        value: "provider-standalone"
+    },
+    {
+        name: "Patient Standalone Launch",
+        description: "Patient opens the app directly and connects to FHIR",
+        value: "patient-standalone"
+    },
+    // {
+    //     name: "Backend Service",
+    //     description: "App connects to FHIR without user login",
+    //     value: "backend-service"
+    // }
+];
+
+const DEFAULT_LAUNCH_PARAMS: SMART.LaunchParams = {
+    launch_type  : "provider-ehr",
+    patient      : "",
+    provider     : "",
+    encounter    : "AUTO",
+    skip_login   : false,
+    skip_auth    : false,
+    sim_ehr      : false,
+    scope        : "",
+    redirect_uris: "",
+    client_id    : "",
+    client_secret: ""
+}
+
 export default function Launcher() {
 
     const { query, launch, setQuery } = useLauncherQuery()
@@ -16,7 +58,8 @@ export default function Launcher() {
 
     // console.log("launch:", launch, query)
 
-    const launchCode = createLaunchCode({
+    const launchCode = encode({
+        ...DEFAULT_LAUNCH_PARAMS,
         launch_type,
         patient      : launch.patient,
         provider     : launch.provider,
@@ -344,55 +387,6 @@ function ClientRegistrationUI() {
             </div>
         </>
     )
-}
-
-const launchTypes = [
-    {
-        name: "Provider EHR Launch",
-        description: "Practitioner opens the app from within an EHR",
-        value: "provider-ehr"
-    },
-    {
-        name: "Patient Portal Launch",
-        description: "Patient opens the app from within a patient portal",
-        value: "patient-portal"
-    },
-    {
-        name: "Provider Standalone Launch",
-        description: "Practitioner opens the app directly and connects to FHIR",
-        value: "provider-standalone"
-    },
-    {
-        name: "Patient Standalone Launch",
-        description: "Patient opens the app directly and connects to FHIR",
-        value: "patient-standalone"
-    },
-    // {
-    //     name: "Backend Service",
-    //     description: "App connects to FHIR without user login",
-    //     value: "backend-service"
-    // }
-];
-
-const DEFAULT_LAUNCH_PARAMS: SMART.LaunchParams = {
-    launch_type  : "provider-ehr",
-    patient      : "",
-    provider     : "",
-    encounter    : "AUTO",
-    skip_login   : false,
-    skip_auth    : false,
-    sim_ehr      : false,
-    scope        : "",
-    redirect_uris: "",
-    client_id    : "",
-    client_secret: ""
-}
-
-function createLaunchCode(params: SMART.LaunchParams) {
-    return encode({
-        ...DEFAULT_LAUNCH_PARAMS,
-        ...params
-    })
 }
 
 function LaunchUI() {

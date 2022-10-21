@@ -106,13 +106,9 @@ export function highlight(str: string, stringToFind = "") {
     return temp;
 }
 
-export function createLaunchCode(params: SMART.LaunchParams) {
-    return encode(params)
-}
-
 export function createLaunchUrl(iss: string, params: SMART.LaunchParams) {
     const url = new URL(iss)
-    url.searchParams.set("launch", createLaunchCode(params))
+    url.searchParams.set("launch", encode(params))
     url.searchParams.set("iss"   , iss + "/auth/authorize" )
     return url.href
 }

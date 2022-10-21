@@ -196,20 +196,25 @@ function PatientPicker({
                         <b className="text-primary">Select Patient(s)</b>
                     </div>
                     <div className="modal-body">
-                        <iframe id="patient-picker-frame" src={ getPickerUrl({ selection, fhirVersion }) } onLoad={
-                            e => {
-                                connectToPickerWindow(
-                                    getPickerOrigin(),
-                                    fhirVersion,
-                                    // @ts-ignore
-                                    e.target.contentWindow,
-                                    sel => {
-                                        if (sel || sel === "") onChange(sel)
-                                        onClose()
-                                    }
-                                )
+                        <iframe
+                            id="patient-picker-frame"
+                            title="Patient Picker Frame"
+                            src={ getPickerUrl({ selection, fhirVersion }) }
+                            onLoad={
+                                e => {
+                                    connectToPickerWindow(
+                                        getPickerOrigin(),
+                                        fhirVersion,
+                                        // @ts-ignore
+                                        e.target.contentWindow,
+                                        sel => {
+                                            if (sel || sel === "") onChange(sel)
+                                            onClose()
+                                        }
+                                    )
+                                }
                             }
-                        }/>
+                        />
                     </div>
                 </div>
             </div>

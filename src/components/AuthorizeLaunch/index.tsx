@@ -52,10 +52,10 @@ export default function AuthorizeLaunch() {
 
     _scopes.forEach(scope => {
         const permissions = scopeToText(scope, isPatient);
-        if (permissions.read  ) groups.read.  push(permissions.read  );
-        if (permissions.write ) groups.write. push(permissions.write );
+        if (permissions.read  ) groups.read.push  (permissions.read  );
+        if (permissions.write ) groups.write.push (permissions.write );
         if (permissions.access) groups.access.push(permissions.access);
-        if (permissions.other ) groups.other. push(permissions.other );
+        if (permissions.other ) groups.other.push (permissions.other );
         if (permissions.create) groups.create.push(permissions.create);
         if (permissions.update) groups.update.push(permissions.update);
         if (permissions.delete) groups.delete.push(permissions.delete);

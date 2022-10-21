@@ -11,7 +11,7 @@ export default function Modal({ children, onClose }: { children: React.ReactNode
         if (onClose && e.key === "Escape") {
             onClose()
         }
-    }, [])
+    }, [onClose])
 
     useEffect(() => {
         if (children && onClose) {
