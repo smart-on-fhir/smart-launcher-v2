@@ -92,7 +92,13 @@ export default function Launcher() {
     let sampleLaunchUrl = new URL(isStandaloneLaunch ? "/sample-app" : "/sample-app/launch", origin);
     
     // The URL to launch the user-specified app
-    let userLaunchUrl = new URL(launch_url || "", origin);
+    let userLaunchUrl: URL | undefined;
+
+    try {
+        userLaunchUrl = new URL(launch_url || "", origin);
+    } catch {
+        userLaunchUrl = new URL("/", origin);
+    }
 
     if (!isStandaloneLaunch) {
         sampleLaunchUrl.searchParams.set("iss", iss);
@@ -114,6 +120,20 @@ export default function Launcher() {
         userLaunchUrl = new URL(`/ehr?app=${encodeURIComponent(userLaunchUrl.href)}`, origin);
     }
 
+    let validationError: string[] = [];
+    if (!isStandaloneLaunch) {
+        if (!launch_url) {
+            validationError.push("Missing app launch URL")
+        }
+        else if (!launch_url.match(/^https?:\/\/.+/)) {
+            validationError.push("Invalid app launch URL")
+        }
+    }
+    try {
+        JSON.parse(launch.jwks || "null")
+    } catch {
+        validationError.push("Invalid JWKS JSON")
+    }
 
     return (
         <div className="container">
@@ -132,8 +152,14 @@ export default function Launcher() {
                 </li>
             </ul>
             <br/>
-            { tab === "0" && <LaunchUI /> }
-            { tab === "1" && <ClientRegistrationUI /> }
+            { tab === "0" && <LaunchTab /> }
+            { tab === "1" && <ClientRegistrationTab /> }
+            <div className="text-danger">
+                { validationError.length ?
+                    <><i className="glyphicon glyphicon-exclamation-sign"/> {validationError.join("; ")}</> :
+                    <>&nbsp;</>
+                }
+            </div>
             <div className="alert alert-success mt-2">
                 <h4 className="text-success mt-0">
                     <i className="glyphicon glyphicon-fire"/> {
@@ -159,7 +185,7 @@ export default function Launcher() {
                                         href={userLaunchUrl.href}
                                         target="_blank"
                                         rel="noreferrer noopener"
-                                        className={"btn btn-primary" + (userLaunchUrl ? "" : " disabled")}>Launch</a>
+                                        className={"btn btn-primary" + (validationError.length ? " disabled": "")}>Launch</a>
                                 }
                             </span>
                         </div>
@@ -169,7 +195,7 @@ export default function Launcher() {
                             href={sampleLaunchUrl.href}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="btn btn-default">
+                            className={"btn btn-default" + (validationError.length ? " disabled" : "")}>
                                 <span className="text-success">Launch Sample App</span>
                             </a>
                     </div>
@@ -202,9 +228,16 @@ export default function Launcher() {
     );
 }
 
-function ClientRegistrationUI() {
+function ClientRegistrationTab() {
 
     const { launch, setQuery, query } = useLauncherQuery()
+
+    let jwksError = ""
+    try {
+        JSON.parse(launch.jwks || "null")
+    } catch {
+        jwksError = "This is not valid JSON"
+    }
 
     return (
         <>
@@ -353,20 +386,12 @@ function ClientRegistrationUI() {
                                 <>
                                     <textarea
                                         placeholder="JWKS as json"
-                                        className="form-control"
+                                        className={ "form-control" + (jwksError ? " invalid" : "")}
                                         value={ launch.jwks }
                                         spellCheck={ false }
                                         onChange={ e => {
-                                            try {
-                                                JSON.parse(e.target.value)
-                                                e.target.setCustomValidity("")
-                                                e.target.reportValidity()
-                                                e.target.classList.remove("invalid")
-                                            } catch {
-                                                e.target.setCustomValidity("This is not valid JSON")
-                                                e.target.reportValidity()
-                                                e.target.classList.add("invalid")
-                                            }
+                                            e.target.setCustomValidity(jwksError)
+                                            e.target.reportValidity()
                                             setQuery({ jwks: e.target.value })
                                         }}
                                         style={{ whiteSpace: "pre", fontFamily: "monospace", fontSize: "small" }}
@@ -389,7 +414,7 @@ function ClientRegistrationUI() {
     )
 }
 
-function LaunchUI() {
+function LaunchTab() {
     const { query, launch, setQuery } = useLauncherQuery()
 
     // In development the frontend is served by Webpack Dev Server and
