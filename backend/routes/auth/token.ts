@@ -85,7 +85,7 @@ export default class TokenHandler {
         try {
             var authorizationToken = jwt.verify(code, config.jwtSecret) as SMART.AuthorizationToken
         } catch (ex) {
-            throw new InvalidClientError("Invalid token (supplied as code parameter in the POST body). %s", ex).status(401)
+            throw new InvalidClientError("Invalid token (supplied as code parameter in the POST body). %s", (ex as Error).message).status(401)
         }
 
         // Require authorizationToken.redirect_uri
