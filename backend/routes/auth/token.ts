@@ -313,13 +313,13 @@ export default class TokenHandler {
             throw new InvalidClientError('No usable keys found').status(401);
         }
 
-        let _keys = keys.filter(k => Array.isArray(k.key_ops));
+        // let _keys = keys.filter(k => Array.isArray(k.key_ops));
 
-        if (!_keys.length) {
-            throw new InvalidClientError('None of the keys found in the JWKS have the key_ops array property').status(401);
-        }
+        // if (!_keys.length) {
+        //     throw new InvalidClientError('None of the keys found in the JWKS have the key_ops array property').status(401);
+        // }
 
-        _keys = keys.filter(k => k.alg === alg);
+        let _keys = keys.filter(k => k.alg === alg);
 
         if (!_keys.length) {
             throw new InvalidClientError('None of the keys found in the JWKS alg equal to %s', alg).status(401);
@@ -332,13 +332,13 @@ export default class TokenHandler {
             throw new InvalidClientError('None of the keys found in the JWKS kid equal to %s', kid).status(401);
         }
 
-        // @ts-ignore
-        _keys = keys.filter(k => k.key_ops!.includes("verify"));
+        // // @ts-ignore
+        // _keys = keys.filter(k => k.key_ops!.includes("verify"));
 
         // If no keys match the verification fails.
-        if (!_keys.length) {
-            throw new InvalidClientError('No usable public keys found in the JWKS').status(401);
-        }
+        // if (!_keys.length) {
+        //     throw new InvalidClientError('No usable public keys found in the JWKS').status(401);
+        // }
 
         // If more than one key matches, the verification fails.
         if (_keys.length > 1) {

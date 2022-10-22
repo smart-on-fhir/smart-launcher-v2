@@ -426,10 +426,8 @@ function ClientRegistrationTab() {
                                     />
                                     <span className="help-block small">
                                         Enter a valid JSON object listing your public JWK keys.
-                                        Example: <code dangerouslySetInnerHTML={{
-                                            __html: '{"keys":[JWK(s)...]}'
-                                        }} />. Note that each JWK must have a <b>kid</b> property
-                                        and a <b>key_ops</b> array that includes <code>"verify"</code>.
+                                        Example: <code dangerouslySetInnerHTML={{ __html: '{"keys":[JWK(s)...]}' }} />.
+                                        This will only be used if the assertion token of the app does not have a <code>jku</code> header!
                                     </span>
                                 </>
                             )}
