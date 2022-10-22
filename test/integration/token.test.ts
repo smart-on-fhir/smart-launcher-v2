@@ -717,43 +717,43 @@ describe("token endpoint", () => {
                 expect(json.error_description).to.equal("Missing token 'alg' header")
             })
 
-            it ("fails if token.sub is not a JWT", async () => {
-                const redirect_uri = "http://localhost";
-                const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
-                const publicKey = privateKey.toJSON(false);
+            // it ("fails if token.sub is not a JWT", async () => {
+            //     const redirect_uri = "http://localhost";
+            //     const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
+            //     const publicKey = privateKey.toJSON(false);
                 
-                // @ts-ignore
-                publicKey.key_ops = [ "verify" ]
+            //     // @ts-ignore
+            //     publicKey.key_ops = [ "verify" ]
 
-                const code = jwt.sign({ redirect_uri, scope: "offline_access" }, config.jwtSecret);
+            //     const code = jwt.sign({ redirect_uri, scope: "offline_access" }, config.jwtSecret);
 
-                const assertion = jwt.sign(
-                    {
-                        iss: "x",
-                        sub: "x",
-                        aud: "x",
-                        exp: 1,
-                        jti: "x"
-                    },
-                    privateKey.toPEM(true),
-                    {
-                        algorithm: privateKey.alg as jwt.Algorithm,
-                        keyid    : privateKey.kid
-                    }
-                );
+            //     const assertion = jwt.sign(
+            //         {
+            //             iss: "x",
+            //             sub: "x",
+            //             aud: "x",
+            //             exp: 1,
+            //             jti: "x"
+            //         },
+            //         privateKey.toPEM(true),
+            //         {
+            //             algorithm: privateKey.alg as jwt.Algorithm,
+            //             keyid    : privateKey.kid
+            //         }
+            //     );
                 
-                const res = await fetchAccessToken({
-                    code,
-                    redirect_uri,
-                    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                    client_assertion: assertion
-                })
+            //     const res = await fetchAccessToken({
+            //         code,
+            //         redirect_uri,
+            //         client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+            //         client_assertion: assertion
+            //     })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Invalid client details token: jwt malformed")
-            })
+            //     expect(res.ok).to.equal(false)
+            //     const json = await res.json()
+            //     expect(json.error).to.equal("invalid_client")
+            //     expect(json.error_description).to.equal("Invalid client details token: jwt malformed")
+            // })
 
             it ("can simulate token_expired_registration_token", async () => {
                 const redirect_uri = "http://localhost";

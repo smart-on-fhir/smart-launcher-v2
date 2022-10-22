@@ -129,7 +129,7 @@ export default class TokenHandler {
 
         // Validate asymmetric authorization
         if (client_assertion && client_assertion_type === "urn:ietf:params:oauth:client-assertion-type:jwt-bearer") {
-            await this.validateClientAssertion(client_assertion)
+            await this.validateClientAssertion(client_assertion, authorizationToken)
         }
 
         return this.finish(authorizationToken);
@@ -141,8 +141,7 @@ export default class TokenHandler {
      * (https://www.rfc-editor.org/rfc/rfc7523#section-3) including validation
      * of the signature on the JWT.
      */
-    public async validateClientAssertion(clientAssertion: string) {
-        const { jwtSecret } = config;
+    public async validateClientAssertion(clientAssertion: string, client: SMART.AuthorizationToken) {
 
         // client_assertion must be a token ------------------------------------
         try {
@@ -182,13 +181,6 @@ export default class TokenHandler {
         }
         if (!jwtHeaders.alg) {
             throw new InvalidClientError("Missing token 'alg' header").status(401)
-        }
-
-        // The client_id must be valid token -----------------------------------
-        try {
-            var client = jwt.verify(token.sub, jwtSecret) as SMART.ClientToken
-        } catch (ex) {
-            throw new InvalidClientError("Invalid client details token: %s", (ex as Error).message).status(401)
         }
 
         // simulated errors ----------------------------------------------------
