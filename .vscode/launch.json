@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Server",
+            "type": "node",
+            "request": "launch",
+            "args": ["${workspaceRoot}/backend/index.ts"],
+            "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            "env": {
+                "PORT": "8445",
+                "FHIR_SERVER_R2": "https://r2.smarthealthit.org",
+                "FHIR_SERVER_R3": "https://r3.smarthealthit.org",
+                "FHIR_SERVER_R4": "https://r4.smarthealthit.org"
+            }
+        }
+    ]
+}
