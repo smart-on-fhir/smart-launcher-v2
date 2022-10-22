@@ -226,7 +226,7 @@ export default class TokenHandler {
             // If the jku header is not whitelisted, the signature verification
             // fails. In our case we only have a single registration-time
             // jwks_url, so we use a simple comparison here
-            if (jwtHeaders.jku !== client.jwks_url) {
+            if (client.jwks_url && jwtHeaders.jku !== client.jwks_url) {
                 throw new InvalidClientError(
                     "jku '%s' not whitelisted. Allowed: '%s'",
                     jwtHeaders.jku,

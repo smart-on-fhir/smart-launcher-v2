@@ -1213,13 +1213,13 @@ describe("token endpoint", () => {
                     expect(json.error_description).to.equal(`No usable keys found`)
                 })
 
-                it ("fails if the none of the keys have a key_ops array", async () => {
-                    const res = await test({ body: { keys: [ {}, {} ] } })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`None of the keys found in the JWKS have the key_ops array property`)
-                })
+                // it ("fails if the none of the keys have a key_ops array", async () => {
+                //     const res = await test({ body: { keys: [ {}, {} ] } })
+                //     expect(res.ok).to.equal(false)
+                //     const json = await res.json()
+                //     expect(json.error).to.equal("invalid_client")
+                //     expect(json.error_description).to.equal(`None of the keys found in the JWKS have the key_ops array property`)
+                // })
 
                 it ("fails if the none of the keys have an alg property", async () => {
                     const res = await test({ body: { keys: [ { key_ops: [] }, { key_ops: [] } ] } })
@@ -1237,13 +1237,13 @@ describe("token endpoint", () => {
                     expect(json.error_description).to.equal(`None of the keys found in the JWKS kid equal to ${ES384_JWK.kid}`)
                 })
 
-                it ("fails if the none of the keys have 'verify' in their key_ops", async () => {
-                    const res = await test({ body: { keys: [ { key_ops: [], alg: "ES384", kid: ES384_JWK.kid } ]}})
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`No usable public keys found in the JWKS`)
-                })
+                // it ("fails if the none of the keys have 'verify' in their key_ops", async () => {
+                //     const res = await test({ body: { keys: [ { key_ops: [], alg: "ES384", kid: ES384_JWK.kid } ]}})
+                //     expect(res.ok).to.equal(false)
+                //     const json = await res.json()
+                //     expect(json.error).to.equal("invalid_client")
+                //     expect(json.error_description).to.equal(`No usable public keys found in the JWKS`)
+                // })
 
                 it ("fails if multiple keys match all requirements", async () => {
                     const res = await test({ body: { keys: [

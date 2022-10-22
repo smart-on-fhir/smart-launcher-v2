@@ -408,7 +408,8 @@ function ClientRegistrationTab() {
                                         onChange={ e => setQuery({ jwks_url: e.target.value }) }
                                     />
                                     <span className="help-block small">
-                                        Enter the URL where the JWKS with your public keys can be found
+                                        Enter the URL where the JWKS with your public keys can be found. If provided,
+                                        this must match the <code>jku</code> header of the assertion token.
                                     </span>
                                 </>
                             )}
