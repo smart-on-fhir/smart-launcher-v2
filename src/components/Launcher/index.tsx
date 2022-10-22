@@ -213,7 +213,7 @@ export default function Launcher() {
                         </div>
                     </div>
                     <div style={{ flex: "1 1 0", marginLeft: 5 }}>
-                        { validationErrors.length ? 
+                        { validationErrors.filter(e => e !== "Missing app launch URL" && e !== "Invalid app launch URL").length ? 
                             <button className="btn btn-default" disabled>Launch Sample App</button> :
                             <a href={sampleLaunchUrl.href} target="_blank" rel="noreferrer noopener" className="btn btn-default">
                                 <span className="text-success">Launch Sample App</span>
