@@ -11,7 +11,7 @@ type Action<T> =
     | { type: 'fetched'; payload: T }
     | { type: 'error'; payload: Error }
 
-export default function useFetch<T=unknown>(url: string, options?: RequestInit): State<T>
+export default function useFetch<T=unknown>(url: string, options: RequestInit = {}, deps: any[] = []): State<T>
 {
     // Used to prevent state update if the component is unmounted
     const cancelRequest = useRef<boolean>(false)
@@ -51,11 +51,18 @@ export default function useFetch<T=unknown>(url: string, options?: RequestInit):
             try {
                 const response = await fetch(url, {
                     ...options,
+                    headers: {
+                        accept: "application/json",
+                        ...options.headers || {}
+                    },
                     signal: abortController.signal
                 })
 
                 if (!response.ok) {
-                    throw new Error(response.statusText)
+                    const body = await response.text()
+                    throw new Error(
+                        response.status + " " + response.statusText + ": " + body
+                    )
                 }
 
                 const data = (await response.json()) as T
@@ -79,7 +86,7 @@ export default function useFetch<T=unknown>(url: string, options?: RequestInit):
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [url])
+    }, [url, ...deps])
 
     return state
 }

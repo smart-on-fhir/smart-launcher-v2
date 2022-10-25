@@ -3,7 +3,7 @@ import { Encounter }             from "fhir/r4"
 import moment                    from "moment"
 import { useEffect, useReducer } from "react"
 import { useSearchParams }       from "react-router-dom"
-import { humanName }             from "../../lib"
+import { ACCESS_TOKEN, humanName }             from "../../lib"
 import "./encounter-picker.css"
 
 
@@ -131,7 +131,13 @@ function Period({ period }: { period: fhir4.Period }) {
 }
 
 async function fetchPatient(baseUrl: string, id: string, signal: AbortSignal): Promise<fhir4.Patient> {
-    const res = await fetch(baseUrl + "/Patient/" + id, { mode: "cors", signal })
+    const res = await fetch(baseUrl + "/Patient/" + id, {
+        mode: "cors",
+        headers: {
+            authorization: `Bearer ${ACCESS_TOKEN}`
+        },
+        signal
+    })
     const txt = await res.text()
     
     if (!res.ok) {
@@ -150,7 +156,13 @@ async function fetchEncounters(baseUrl: string, patientId: string, signal: Abort
     url.searchParams.set("patient"   , patientId    )
     url.searchParams.set("_sort:desc", "date"       )
 
-    const res = await fetch(url, { mode: "cors", signal })
+    const res = await fetch(url, {
+        mode: "cors",
+        headers: {
+            authorization: `Bearer ${ACCESS_TOKEN}`
+        },
+        signal
+    })
     const txt = await res.text()
     
     if (!res.ok) {

@@ -11,7 +11,7 @@ export default async function proxy(req: Request, res: Response) {
     const fhirServer       = getFhirServerBaseUrl(req);
 
     // Anything other than /metadata requires authentication
-    validateToken(req);
+    validateToken(req, true);
 
     // Build the FHIR request options --------------------------------------
     let fhirRequestOptions: RequestInit = {

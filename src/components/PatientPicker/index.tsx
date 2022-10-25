@@ -1,7 +1,7 @@
 import { useReducer }                      from "react"
 import { useSearchParams }                 from "react-router-dom"
 import useFetch                            from "../../hooks/useFetch"
-import { formatAge, highlight, humanName } from "../../lib"
+import { ACCESS_TOKEN, formatAge, highlight, humanName } from "../../lib"
 import "./patient-picker.css"
 
 
@@ -106,7 +106,11 @@ export default function PatientPicker() {
         url.searchParams.set("_id", patient)
     }
 
-    const { data, loading, error } = useFetch<fhir4.Bundle<fhir4.Patient>>(url.href)
+    const { data, loading, error } = useFetch<fhir4.Bundle<fhir4.Patient>>(url.href, {
+        headers: {
+            authorization: `Bearer ${ACCESS_TOKEN}`
+        }
+    })
 
     const next = data?.link?.find(l => l.relation === "next")?.url
     const prev = data?.link?.find(l => l.relation === "previous")?.url

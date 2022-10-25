@@ -5,6 +5,9 @@ import express                     from "express"
 import { LAUNCHER, FHIR_VERSIONS } from "../TestContext"
 import { requestMethod }           from "../MockServer"
 import config                      from "../../backend/config"
+import { ACCESS_TOKEN }            from "../lib"
+
+
 
 
 FHIR_VERSIONS.forEach(([ver, server]) => {
@@ -12,14 +15,14 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
     describe("FHIR Proxy " + ver, () => {
 
         it ("rejects unsupported fhir versions", async () => {
-            const res = await fetch(LAUNCHER.baseUrl + "/v/r234/fhir/Patient")
+            const res = await fetch(LAUNCHER.baseUrl + "/v/r234/fhir/Patient", { headers: { authorization: `Bearer ${ACCESS_TOKEN}` }})
             expect(res.ok).to.be.false
             expect(await res.text()).to.equal('FHIR server "r234" not found')
         })
 
         it ("Handles upstream being down in case of metadata request", async () => {
             server.mock("/Patient", { status: 503, body: "Service unavailable" });
-            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient")
+            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient", { headers: { authorization: `Bearer ${ACCESS_TOKEN}` }})
             expect(res.status).to.equal(503)
             expect(await res.text()).to.equal("Service unavailable")
         })
@@ -32,7 +35,8 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
 
             const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient", {
                 headers: {
-                    accept: 'text/html' 
+                    accept: 'text/html',
+                    authorization: `Bearer ${ACCESS_TOKEN}`
                 }
             })
 
@@ -48,17 +52,25 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
             // proxy should strip
             server.mock("/Patient", { status: 200, body: {}, headers: { 'x-custom': "whatever" }});
 
-            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient")
+            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient", { headers: { authorization: `Bearer ${ACCESS_TOKEN}` }})
             expect(res.headers.get('x-custom')).to.not.exist
         });
 
         it ("Passes through the content-type, etag and location response headers", async () => {
             server.mock("/Patient", { status: 200, body: "", headers: {
-                "content-type": "application/test-custom-type",
-                "etag"        : "test-custom-etag",
-                "location"    : "test-custom-location"
+                "content-type" : "application/test-custom-type",
+                "etag"         : "test-custom-etag",
+                "location"     : "test-custom-location",
+                "authorization": `Bearer ${ACCESS_TOKEN}`
             }});
-            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient");
+            const res = await fetch(
+                LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient",
+                {
+                    headers: {
+                        authorization: `Bearer ${ACCESS_TOKEN}`
+                    }
+                }
+            );
             expect(res.headers.get("content-type")).to.equal("application/test-custom-type")
             expect(res.headers.get("etag")).to.equal("test-custom-etag")
             expect(res.headers.get("location")).to.equal("test-custom-location")
@@ -84,7 +96,14 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
                 "content-type": "application/json"
             }});
 
-            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient");
+            const res = await fetch(
+                LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient",
+                {
+                    headers: {
+                        authorization: `Bearer ${ACCESS_TOKEN}`
+                    }
+                }
+            );
             const json = await res.json()
             expect(json).to.deep.equal({
                 a: LAUNCHER.baseUrl + "/v/" + ver + "/fhir",
@@ -100,7 +119,14 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
                 "content-type": "application/json"
             }});
 
-            const res = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/metadata");
+            const res = await fetch(
+                LAUNCHER.baseUrl + "/v/" + ver + "/fhir/metadata",
+                {
+                    headers: {
+                        authorization: `Bearer ${ACCESS_TOKEN}`
+                    }
+                }
+            );
             const json = await res.json()
             expect(json).to.deep.equal({
                 a: LAUNCHER.baseUrl + "/v/" + ver + "/fhir",
@@ -128,7 +154,7 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
                 headers: { "content-type": "application/json" }
             });
 
-            const body = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient").then(r => r.json())
+            const body = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient", { headers: { authorization: `Bearer ${ACCESS_TOKEN}` }}).then(r => r.json())
                 
             expect(body.link).to.be.an("Array", "No links found");
 
@@ -144,7 +170,14 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
                 headers: { "content-type": "application/json" }
             })
 
-            const body2 = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir" + nextURL.pathname + nextURL.search).then(r => r.json())
+            const body2 = await fetch(
+                LAUNCHER.baseUrl + "/v/" + ver + "/fhir" + nextURL.pathname + nextURL.search,
+                {
+                    headers: {
+                        authorization: `Bearer ${ACCESS_TOKEN}`
+                    }
+                }
+            ).then(r => r.json())
             
             expect(body2.link).to.be.an("Array", "No links found on second page");
             
@@ -160,13 +193,13 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
 
         it ("Replies with formatted JSON for bundles", async () => {
             server.mock("/Patient", { status: 200, body: JSON.stringify({ a: [1] }, null, 4), headers: { "content-type": "application/json" }});
-            const txt = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient").then(r => r.text());
+            const txt = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient", { headers: { authorization: `Bearer ${ACCESS_TOKEN}` }}).then(r => r.text());
             expect(txt).to.match(/\n.+/);
         });
 
         it ("Replies with formatted JSON for single resources", async () => {
             server.mock("/Patient/1", { status: 200, body: JSON.stringify({ a: 1 }, null, 4), headers: { "content-type": "application/json" }});
-            const txt = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient/1").then(r => r.text());
+            const txt = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient/1", { headers: { authorization: `Bearer ${ACCESS_TOKEN}` }}).then(r => r.text());
             expect(txt).to.match(/\n.+/);
         });
 
@@ -251,7 +284,8 @@ FHIR_VERSIONS.forEach(([ver, server]) => {
                 const json = await fetch(LAUNCHER.baseUrl + "/v/" + ver + "/fhir/Patient", {
                     method,
                     headers: {
-                        "content-type": "application/json"
+                        "content-type": "application/json",
+                        authorization: `Bearer ${ACCESS_TOKEN}`
                     },
                     body
                 }).then(r => r.text());

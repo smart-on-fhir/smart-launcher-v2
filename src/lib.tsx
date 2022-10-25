@@ -8,6 +8,13 @@ const RE_MONTH_YEAR = /\d{4}-d{2}$/;
 
 type FHIRPerson = fhir2.Patient | fhir3.Patient | fhir4.Patient | fhir2.Practitioner | fhir3.Practitioner | fhir4.Practitioner
 
+export const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI" +
+    "6InBhdGllbnQvKi4qIHVzZXIvKi4qIGxhdW5jaCBsYXVuY2gvcGF0aWVudCBsYXVuY2gvZW5" +
+    "jb3VudGVyIG9wZW5pZCBmaGlyVXNlciBwcm9maWxlIG9mZmxpbmVfYWNjZXNzIiwiY29kZV9" +
+    "jaGFsbGVuZ2VfbWV0aG9kIjoiUzI1NiIsImNvZGVfY2hhbGxlbmdlIjoiejJnZVU1VVFGV3V" +
+    "ERzdZUW1OWTNFSmtSWW5KaXJ5VkdVaXRLRl9KNE1PSSIsImlhdCI6MTY2NjcwMzI3MiwiZXh" +
+    "wIjoyNjY2NzA2ODcyfQ.W7iQZgOqHi7S2mb-PEfuWu2AJvK3jbP2RrErevUYg-s";
+
 
 function toArray(x: any) {
     if (!Array.isArray(x)) {

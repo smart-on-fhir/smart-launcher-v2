@@ -162,7 +162,7 @@ export default function SampleApp()
             )}
             <ServerInfo    client={client} />
             <SMARTInfo     client={client} />
-            <ClientInfo    params={ launchParams } />
+            <ClientInfo    params={launchParams} />
             <TokenResponse client={client} />
             <IDToken       client={client} />
             <RefreshToken  client={client} />
