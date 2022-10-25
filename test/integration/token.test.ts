@@ -7,7 +7,9 @@ import { LAUNCHER }         from "../TestContext"
 import config               from "../../backend/config"
 import jose                 from "node-jose"
 import MockServer, { MockOptions } from "../MockServer"
-import { fetchAccessToken, createClientAssertion } from "../lib"
+import { fetchAccessToken, createClientAssertion, getTokenURL } from "../lib"
+import { SMART } from "../.."
+import { jwk2pem } from "pem-jwk"
 
 use(chaiAsPromised);
 
@@ -785,7 +787,7 @@ describe("token endpoint", () => {
                 expect(res.ok).to.equal(false)
                 const json = await res.json()
                 expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Registration token expired")
+                expect(json.error_description).to.equal("Simulated expired token error")
             })
 
             it ("can simulate token_invalid_jti", async () => {
@@ -1287,6 +1289,494 @@ describe("token endpoint", () => {
         expect(fetchAccessToken({ code, redirect_uri: "http://something.else" })).to.eventually.be.rejected;
     })
 
+    describe('Backend Services', () => {
+
+        const JWKS_MOCK_SERVER = new MockServer("JWKS Mock Server", true);
+
+        before(async () => await JWKS_MOCK_SERVER.start());
+        
+        after(async () => await JWKS_MOCK_SERVER.stop());
+        
+        beforeEach(() => JWKS_MOCK_SERVER.clear());
+
+        const PRIVATE_KEY = {
+            "kty": "RSA",
+            "alg": "RS384",
+            "n": "xo_gxYK3pcbczo8tSXLRaFGKBGEjQpk9tXnLEgZ3P0bAG8I26Sw4LSzMw2Mqz4aF0E73AUAkephuKMWSneGO6ZI0uAOaRXYXruHHAG68pK5dT8MZyWnXAwwNYK_QmtnC7Bc7jmqRDn9jANo6iREtkFvuNpyOv-tVk8waZoTG4zf0O4AOXSiRFp4N4_QWwyhzUX8mhjtW5hFZcg6vm_VIcDv1E5rcumbc3ga53c8G6_lNoKfRzh4Mhf8-Mnljszo7x8MdLZ7OEhMAg8DCzx66Vsm4dOassRRIFNUyBsu3fRslByLdUoXdcjMmp0hYqPVKxpukgb-WQEeVWsB-lAjZHw",
+            "e": "AQAB",
+            "d": "qEnfTmcYsWdXU7ZjwqGOvCSHnmiZ0uNAOuQL6a4TOU0Em0JC-eMhhaA3t83_xb2VAlU64hN0F3fDvcieGDPIxUvGZMOg6AhL0EvJNyOjvMuPiH-qBlwvAIUhfXXljqjLnP-f2XeWk7wBtAJBpFQr0vMndZ_BGQYjFM3i_krAqmgMPorxRmP5FZIeSyXAyGhuqBZ_N4s_-BitBrAm7MlEexc4FwxQg3hDoZ9gk1DcKnnpYCtZGUj3zhcxXzp2vOu9PHiBJ91GbPp9yOwWie4-bd8Q2XJT0cOfVRLbqsVQkarvS7zHWqlmIRUiJM-Ffhv8rwuWOlnM1mhC0bkDBJb8MQ",
+            "p": "_blYwdk-rAX1IiKnBUGn72zALfd0gjkVMHI_0-O56zUHTthVhVZ0TS7B0SwtgZU48rnSewf2SiZyfk3jMfgvmt6M6B0HIXbE0OdPhFt_qfo8AbwdZ4cmmRiqk-k5EBqchI2Rd6hy5t6YIR24XHZeArqF7zI-x9p_XSJ41wMn0qc",
+            "q": "yFfbZDxSpdHP8eSTwUmjB-FPyPYwQHdtSNE3UfqlGF0iCt_TBS2kY8DceI6F67IixOMUEbKqAEZYB_gcU5cbyDW77lEejmdNyT3QQicJYmiAicv3sIXDS5Y4zONah64stqZR3jLAXSdz1NEzIiKN8LC_3LBnleo0MNFspYaqbMk",
+            "dp": "zdaAW0OTxJtQs9DJD0qko2jmwGPw8XS96__EKHKnclojA6QePX5V_Afi1X-xq18URFbcm1NqS93FJRKrLu7aMBo81lI2Zr-kDJabvBU_DPcll4K1mDfc6HdKa5TZ5mawdBkl2p2eGg6b_MHPv7OHsU8BOXzZ0elBSp2cy1KUDCE",
+            "dq": "F3vE6bDwdyNq3o3Oi_-XrprIgWPqMARPuRNdCqz4oSx5ixDFaXv6Iv8-WJtMM16EGNQNTC3HI5UbSIPavimeRg-WYc78Z_DP-2DVgouU3AYn2v8fn39ubvPC4LFdsT3HW_mO6x7D0aeIOk_zUHMAdFAjjTjYS4hSac6Cj7yDSZE",
+            "qi": "S0_CM6gD7_QZYM4LURTT_zpiaG5WDsGhKzw67fBNfpvS79T4Y-C9ICLc9h2SFflMXRry9SiKNDOdBm1MqYXm4R5ExHxr1DYzoBOk6q6ejlo8iImnKt-BhEU-L21NZzKxJXuS3Bu6RPYtclRfbAQP_BwxjtM4kwXnewXhZQrKb1Y",
+            "kid": "5f75856796f2270469566ceb84c204f6"
+        };
+
+        it ("rejects missing sim segment", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                sim: ""
+            })
+            expect(res.status).to.equal(400)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_request")
+            expect(json.error_description).to.match(/^Invalid launch options/)
+        })
+
+        it ("rejects invalid sim segment", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                sim: "x"
+            })
+            expect(res.status).to.equal(400)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_request")
+            expect(json.error_description).to.match(/^Invalid launch options/)
+        })
+
+        it ("requires scope param", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                sim: { launch_type: "backend-service" }
+            })
+            expect(res.status).to.equal(400)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Missing 'scope' parameter")
+        })
+
+        it ("requires client_assertion_type param", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                sim: { launch_type: "backend-service" }
+            })
+            expect(res.status).to.equal(400)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Missing 'client_assertion_type' parameter")
+        })
+
+        it ("requires client_assertion param", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "x",
+                sim: { launch_type: "backend-service" }
+            })
+            expect(res.status).to.equal(400)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Missing 'client_assertion' parameter")
+        })
+
+        it ("validates client_assertion_type", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "x",
+                client_assertion: "x",
+                sim: { launch_type: "backend-service" }
+            })
+            expect(res.status).to.equal(400)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Invalid 'client_assertion_type' parameter. Must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'.")
+        })
+
+        it ("validates client_assertion", async () => {
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: "x",
+                sim: { launch_type: "backend-service" }
+            })
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_request")
+            expect(json.error_description).to.equal('Could not decode the "client_assertion" parameter')
+        })
+
+        it ("can simulate invalid jti", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                auth_error: "token_invalid_jti"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+            
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, config.jwtSecret, {
+                expiresIn: "10m",
+                keyid: "whatever"
+            });
+
+            // console.log(tokenUrl, assertion)
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Simulated invalid 'jti' value")
+        })
+
+        it ("can simulate invalid token", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                auth_error: "token_invalid_token"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Simulated invalid token error")
+        })
+
+        it ("can simulate expired token", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                auth_error: "token_expired_registration_token"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Simulated expired token error")
+        })
+
+        it ("can simulate expired token", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                auth_error: "token_invalid_scope"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_scope")
+            expect(json.error_description).to.equal("Simulated invalid scope error")
+        })
+
+        it ("validates client_id", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                client_id: "some-client-id"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Invalid 'client_id' (as sub claim of the assertion JWT)")
+        })
+
+        it ("validates scopes", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read x",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_scope")
+            expect(json.error_description).to.equal('Invalid scope(s) "x" requested. Only system scopes are allowed.')
+        })
+
+        it ("does scope negotiation", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                scope: "system/Patient.read"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/Slot.write",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_scope")
+            expect(json.error_description).to.equal('None of the requested scope(s) could be granted.')
+        })
+
+        it ("passes request_invalid_token to the access token", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                auth_error: "request_invalid_token"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/Slot.write",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(200)
+            const json = await res.json()
+            const token = jwt.decode(json.access_token, { json: true })
+            expect(token!.sim_error).to.equal("Invalid token (simulated error)")
+        })
+
+        it ("passes request_expired_token to the access token", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                auth_error: "request_expired_token"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", {
+                body: {
+                    keys: [{ ...PRIVATE_KEY, key_ops: [ "verify" ] }]
+                }
+            })
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/Slot.write",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(200)
+            const json = await res.json()
+            const token = jwt.decode(json.access_token, { json: true })
+            expect(token!.sim_error).to.equal("Token expired (simulated error)")
+        })
+    });
 })
 
 it ("The revoke endpoint is N/A for this server", async () => {

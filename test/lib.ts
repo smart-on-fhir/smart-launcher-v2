@@ -81,27 +81,52 @@ export function launch({
     return fetch(url, { ...requestOptions, redirect: "manual" })
 }
 
+export function getTokenURL({
+    fhirVersion = "r4",
+    sim
+}: {
+    fhirVersion?: string // "r2" | "r3" | "r4"
+    sim        ?: string | SMART.LaunchParams
+} = {}) {
+    let path = `/v/${fhirVersion}`
+
+    if (sim) {
+        if (typeof sim === "string") {
+            path += `/sim/${sim}`
+        } else {
+            path += `/sim/${encode(sim)}`
+        }
+    }
+
+    path += `/auth/token`
+
+    return new URL(path, LAUNCHER.baseUrl)
+}
+
 export async function fetchAccessToken({
     fhirVersion = "r4",
     grant_type = "authorization_code",
     requestOptions = {},
+    sim,
     ...params
 }: {
-    code                 ?: string, // The code obtained from the authorize request
-    redirect_uri         ?: string,
-    code_verifier        ?: string,
-    fhirVersion          ?: string, // "r2" | "r3" | "r4"
-    grant_type           ?: string,
-    refresh_token        ?: string,
-    client_assertion_type?: string,
+    code                 ?: string // The code obtained from the authorize request
+    redirect_uri         ?: string
+    code_verifier        ?: string
+    fhirVersion          ?: string // "r2" | "r3" | "r4"
+    grant_type           ?: string
+    refresh_token        ?: string
+    client_assertion_type?: string
     client_assertion     ?: string
+    scope                ?: string
+    sim                  ?: string | SMART.LaunchParams
     requestOptions       ?: RequestInit
 }): Promise<Response>
 {
     const formData = new URLSearchParams()
     
     formData.set("grant_type", grant_type)
-    
+
     for (let name in params) {
         const value = params[name as keyof typeof params]
         if (value !== undefined) {
@@ -109,7 +134,7 @@ export async function fetchAccessToken({
         }
     }
 
-    const url = new URL(`/v/${fhirVersion}/auth/token`, LAUNCHER.baseUrl)
+    const url = getTokenURL({ sim, fhirVersion })
 
     return fetch(url, {
         method: "POST",

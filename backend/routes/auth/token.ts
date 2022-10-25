@@ -65,7 +65,7 @@ export default class TokenHandler {
         const { scope, client_assertion, client_assertion_type } = this.request.body
 
         try {
-            var launchOptions = decode(String(this.request.params.sim || ""))
+            var launchOptions = decode(this.request.params.sim)
         } catch (ex) {
             throw new InvalidRequestError("Invalid launch options: " + ex)
         }
@@ -100,36 +100,25 @@ export default class TokenHandler {
         
         const token = jwt.decode(client_assertion, { complete: true })
         
-        // console.log(launchOptions, token)
-
         await this.validateClientAssertion(client_assertion, launchOptions)
 
-        // Simulate invalid jti error
-        if (launchOptions.auth_error === "token_invalid_jti") {
-            throw new InvalidClientError("Simulated invalid jti error").status(401)
-        }
-
         if (launchOptions.auth_error === "token_invalid_token") {
-            throw new InvalidClientError("Simulated invalid token error").status(400)
-        }
-
-        if (launchOptions.auth_error === "token_expired_registration_token") {
-            throw new InvalidClientError("Simulated expired token error").status(401)
+            throw new InvalidClientError("Simulated invalid token error").status(401)
         }
 
         if (launchOptions.auth_error === "token_invalid_scope") {
-            throw new InvalidScopeError("Simulated invalid scope error").status(400)
+            throw new InvalidScopeError("Simulated invalid scope error").status(401)
         }
 
         // Validate client_id
         if (launchOptions.client_id && token?.payload.sub !== launchOptions.client_id) {
-            throw new InvalidClientError("Invalid 'client_id' (as sub claim of the assertion JWT)").status(400)
+            throw new InvalidClientError("Invalid 'client_id' (as sub claim of the assertion JWT)").status(401)
         }
 
         // Only use system scopes
         const invalidScopes = ScopeSet.getInvalidSystemScopes(scope)
         if (invalidScopes) {
-            throw new InvalidScopeError(`Invalid scope(s) "%s" requested. Only system scopes are allowed.`, invalidScopes).status(400)
+            throw new InvalidScopeError(`Invalid scope(s) "%s" requested. Only system scopes are allowed.`, invalidScopes).status(401)
         }
 
         // Basic scope negotiation
@@ -137,7 +126,7 @@ export default class TokenHandler {
         if (client.scope) {
             grantedScopes = new ScopeSet(client.scope).negotiate(scope).grantedScopes
             if (!grantedScopes.length) {
-                throw new InvalidScopeError(`None of the requested scope(s) could be granted.`).status(400)
+                throw new InvalidScopeError(`None of the requested scope(s) could be granted.`).status(401)
             }
         }
 
@@ -301,7 +290,7 @@ export default class TokenHandler {
 
         // simulated errors ----------------------------------------------------
         if (client.auth_error === "token_expired_registration_token") {
-            throw new InvalidClientError("Registration token expired").status(401)
+            throw new InvalidClientError("Simulated expired token error").status(401)
         }
         if (client.auth_error === "token_invalid_jti") {
             throw new InvalidClientError("Simulated invalid 'jti' value").status(401);
