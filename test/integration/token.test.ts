@@ -984,7 +984,7 @@ describe("token endpoint", () => {
                 expect(res.ok).to.equal(false)
                 const json = await res.json()
                 expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("No JWKS or JWKS URL found for this client")
+                expect(json.error_description).to.equal("No JWKS or JWKS URL found for this launch")
             })
 
             it ("throws if jku is not a valid URL", async () => {

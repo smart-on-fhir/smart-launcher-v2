@@ -258,7 +258,7 @@ export default class TokenHandler {
             }
 
             else {
-                throw new InvalidClientError("No JWKS or JWKS URL found for this client").status(401)
+                throw new InvalidClientError("No JWKS or JWKS URL found for this launch").status(401)
             }
         }
 
