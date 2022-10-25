@@ -77,3 +77,20 @@ a.disabled {
     pointer-events: none;
     filter: grayscale();
 }
+
+summary {
+    display: list-item;
+    cursor: pointer;
+}
+summary::marker {
+    color: #888;
+    font-size: 13px;
+}
+
+details {
+    padding: 10px 0;
+}
+
+details + details {
+    border-top: 1px dashed #CCC;
+}

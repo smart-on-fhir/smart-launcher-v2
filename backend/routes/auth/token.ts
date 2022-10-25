@@ -10,8 +10,10 @@ import ScopeSet from "../../../src/isomorphic/ScopeSet"
 import {
     InvalidClientError,
     InvalidRequestError,
+    InvalidScopeError,
     OAuthError
 } from "../../errors"
+import { decode } from "../../../src/isomorphic/codec"
 
 
 export default class TokenHandler {
@@ -49,11 +51,125 @@ export default class TokenHandler {
                 return await this.handleAuthorizationCode();
             case "refresh_token":
                 return this.handleRefreshToken();
+            case "client_credentials":
+                return this.handleBackendServices();
             default:
                 throw new OAuthError('Invalid or missing grant_type parameter "%s"', req.body.grant_type)
                     .errorId("unsupported_grant_type")
                     .status(400);
         }
+    }
+
+    public async handleBackendServices(): Promise<void> {
+        
+        const { scope, client_assertion, client_assertion_type } = this.request.body
+
+        try {
+            var launchOptions = decode(String(this.request.params.sim || ""))
+        } catch (ex) {
+            throw new InvalidRequestError("Invalid launch options: " + ex)
+        }
+
+        // Require scope param
+        if (!scope) {
+            throw new InvalidClientError("Missing 'scope' parameter").status(400)
+        }
+
+        // Require client_assertion_type param
+        if (!client_assertion_type) {
+            throw new InvalidClientError("Missing 'client_assertion_type' parameter").status(400)
+        }
+
+        // Require client_assertion param
+        if (!client_assertion) {
+            throw new InvalidClientError("Missing 'client_assertion' parameter").status(400)
+        }
+
+        // Validate client_assertion_type param
+        if (client_assertion_type !== "urn:ietf:params:oauth:client-assertion-type:jwt-bearer") {
+            throw new InvalidClientError(
+                "Invalid 'client_assertion_type' parameter. Must be " +
+                "'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'."
+            ).status(400)
+        }
+
+        const client: Partial<SMART.AuthorizationToken> = {
+            accessTokensExpireIn: 600,
+            scope: launchOptions.scope
+        }
+        
+        const token = jwt.decode(client_assertion, { complete: true })
+        
+        // console.log(launchOptions, token)
+
+        await this.validateClientAssertion(client_assertion, launchOptions)
+
+        // Simulate invalid jti error
+        if (launchOptions.auth_error === "token_invalid_jti") {
+            throw new InvalidClientError("Simulated invalid jti error").status(401)
+        }
+
+        if (launchOptions.auth_error === "token_invalid_token") {
+            throw new InvalidClientError("Simulated invalid token error").status(400)
+        }
+
+        if (launchOptions.auth_error === "token_expired_registration_token") {
+            throw new InvalidClientError("Simulated expired token error").status(401)
+        }
+
+        if (launchOptions.auth_error === "token_invalid_scope") {
+            throw new InvalidScopeError("Simulated invalid scope error").status(400)
+        }
+
+        // Validate client_id
+        if (launchOptions.client_id && token?.payload.sub !== launchOptions.client_id) {
+            throw new InvalidClientError("Invalid 'client_id' (as sub claim of the assertion JWT)").status(400)
+        }
+
+        // Only use system scopes
+        const invalidScopes = ScopeSet.getInvalidSystemScopes(scope)
+        if (invalidScopes) {
+            throw new InvalidScopeError(`Invalid scope(s) "%s" requested. Only system scopes are allowed.`, invalidScopes).status(400)
+        }
+
+        // Basic scope negotiation
+        let grantedScopes = scope.trim().split(/\s+/)
+        if (client.scope) {
+            grantedScopes = new ScopeSet(client.scope).negotiate(scope).grantedScopes
+            if (!grantedScopes.length) {
+                throw new InvalidScopeError(`None of the requested scope(s) could be granted.`).status(400)
+            }
+        }
+
+        const tokenResponse: SMART.AccessTokenResponse = {
+            access_token : "",
+            token_type   : "Bearer",
+            expires_in   : client.accessTokensExpireIn,
+            scope        : grantedScopes.join(" ")
+        };
+
+        const accessToken = {
+            scope     : tokenResponse.scope,
+            jwks_url  : launchOptions.jwks_url,
+            jwks      : launchOptions.jwks,
+            sim_error : ""
+        }
+
+        // Inject invalid token error (to be thrown while requesting FHIR data)
+        if (launchOptions.auth_error === "request_invalid_token") {
+            accessToken.sim_error = "Invalid token (simulated error)";
+        }
+
+        // Inject expired token error (to be thrown while requesting FHIR data)
+        else if (launchOptions.auth_error === "request_expired_token") {
+            accessToken.sim_error = "Token expired (simulated error)";
+        }
+
+        // access_token
+        tokenResponse.access_token = jwt.sign(accessToken, config.jwtSecret, { expiresIn: client.accessTokensExpireIn });
+
+        this.response.set({ "Cache-Control": "no-store", "Pragma": "no-cache" });
+        this.response.json(tokenResponse);
     }
 
     /**
@@ -141,7 +257,7 @@ export default class TokenHandler {
      * (https://www.rfc-editor.org/rfc/rfc7523#section-3) including validation
      * of the signature on the JWT.
      */
-    public async validateClientAssertion(clientAssertion: string, client: SMART.AuthorizationToken) {
+    public async validateClientAssertion(clientAssertion: string, client: Partial<SMART.AuthorizationToken>) {
 
         // client_assertion must be a token ------------------------------------
         try {
@@ -332,13 +448,13 @@ export default class TokenHandler {
             throw new InvalidClientError('None of the keys found in the JWKS kid equal to %s', kid).status(401);
         }
 
-        // // @ts-ignore
-        // _keys = keys.filter(k => k.key_ops!.includes("verify"));
+        // @ts-ignore
+        _keys = keys.filter(k => !k.key_ops?.includes("sign"));
 
         // If no keys match the verification fails.
-        // if (!_keys.length) {
-        //     throw new InvalidClientError('No usable public keys found in the JWKS').status(401);
-        // }
+        if (!_keys.length) {
+            throw new InvalidClientError('No usable public keys found in the JWKS').status(401);
+        }
 
         // If more than one key matches, the verification fails.
         if (_keys.length > 1) {

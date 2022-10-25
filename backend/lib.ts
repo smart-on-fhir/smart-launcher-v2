@@ -62,28 +62,31 @@ export function getFhirServerBaseUrl(req: Request) {
     return fhirServer
 }
 
-export function validateToken(req: Request) {
-        
-    // Validate token if authorization is used
-    if (req.headers.authorization) {
-
-        // require a valid auth token if there is an auth token
-        try {
-            var token = jwt.verify(
-                req.headers.authorization.split(" ")[1],
-                config.jwtSecret
-            );
-        } catch (e) {
-            throw new HttpError("Invalid token: " + (e as Error).message).status(401)
+export function validateToken(req: Request, required = false) {
+    
+    if (!req.headers.authorization) {
+        if (required) {
+            throw new HttpError("Unauthorized! No authorization header provided in request.").status(401)
         }
+        return;
+    }
 
-        if (!token || typeof token !== "object") {
-            throw new HttpError("Invalid token").status(400)
-        }
+    // require a valid auth token if there is an auth token
+    try {
+        var token = jwt.verify(
+            req.headers.authorization.split(" ")[1],
+            config.jwtSecret
+        );
+    } catch (e) {
+        throw new HttpError("Invalid token: " + (e as Error).message).status(401)
+    }
 
-        if (token.sim_error) {
-            throw new HttpError(token.sim_error).status(401)
-        }
+    if (!token || typeof token !== "object") {
+        throw new HttpError("Invalid token").status(400)
+    }
+
+    if (token.sim_error) {
+        throw new HttpError(token.sim_error).status(401)
     }
 }
 

@@ -18,7 +18,7 @@ declare namespace SMART {
     /**
      * All the launch types that we recognize
      */
-    type LaunchType = "provider-ehr" | "patient-portal" | "provider-standalone" | "patient-standalone"; //| "backend-service" | "cds-hooks";
+    type LaunchType = "provider-ehr" | "patient-portal" | "provider-standalone" | "patient-standalone" | "backend-service"; //| "cds-hooks";
 
     type SimulatedError = 
 

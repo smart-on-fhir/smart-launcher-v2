@@ -19,7 +19,7 @@ export const launchTypes: SMART.LaunchType[] = [
     "patient-portal",
     "provider-standalone",
     "patient-standalone",
-    // "backend-service"
+    "backend-service"
 ];
 
 /**
@@ -31,6 +31,25 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
 
     if (!ignoreErrors && launchTypeIndex === -1) {
         throw new Error(`Invalid launch type "${params.launch_type}"`)
+    }
+
+    if (params.launch_type === "backend-service") {
+        return base64UrlEncode(JSON.stringify([
+            launchTypeIndex,
+            "", // patient
+            "", // provider
+            "", // encounter
+            0,  // skip_login
+            0,  // skip_auth
+            0,  // sim_ehr
+            params.scope         || "",
+            "", // redirect_uris
+            params.client_id     || "",
+            "", // params.client_secret
+            params.auth_error    || "",
+            params.jwks_url      || "",
+            params.jwks          || ""
+        ]))
     }
 
     const arr = [
@@ -87,7 +106,7 @@ export function decode(launch: string): SMART.LaunchParams {
  * IMPORTANT: This function will be called in the browser, but also in Node
  * environment while testing
  */
-function base64UrlEncode(str: string) {
+export function base64UrlEncode(str: string) {
     return typeof Buffer === "undefined" ?
         window.btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '') :
         Buffer.from(str, "utf8").toString("base64url");
@@ -97,7 +116,7 @@ function base64UrlEncode(str: string) {
  * IMPORTANT: This function will be called in the browser, but also in Node
  * environment while testing
  */
- function base64UrlDecode(str: string) {
+export function base64UrlDecode(str: string) {
     if (typeof Buffer === "undefined") {
         while (str.length % 4) str += "="
         str = str.replace(/-/g, "+").replace(/_/g, "/")

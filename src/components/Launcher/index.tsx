@@ -29,11 +29,11 @@ const launchTypes = [
         description: "Patient opens the app directly and connects to FHIR",
         value: "patient-standalone"
     },
-    // {
-    //     name: "Backend Service",
-    //     description: "App connects to FHIR without user login",
-    //     value: "backend-service"
-    // }
+    {
+        name: "Backend Service",
+        description: "App connects to FHIR without user login",
+        value: "backend-service"
+    }
 ];
 
 const DEFAULT_LAUNCH_PARAMS: SMART.LaunchParams = {
@@ -55,9 +55,10 @@ function getValidationErrors(launch: SMART.LaunchParams, query: LauncherQuery) {
     const { launch_type } = launch
     const { launch_url } = query
     const isStandaloneLaunch = launch_type.includes("standalone");
+    const isBackendService = launch_type === "backend-service";
 
     let validationErrors: string[] = [];
-    if (!isStandaloneLaunch) {
+    if (!isStandaloneLaunch && !isBackendService) {
         if (!launch_url) {
             validationErrors.push("Missing app launch URL")
         }
@@ -65,6 +66,7 @@ function getValidationErrors(launch: SMART.LaunchParams, query: LauncherQuery) {
             validationErrors.push("Invalid app launch URL")
         }
     }
+
     try {
         JSON.parse(launch.jwks || "null")
     } catch {
@@ -78,6 +80,7 @@ function getValidationErrors(launch: SMART.LaunchParams, query: LauncherQuery) {
             validationErrors.push("Invalid JWKS URL")
         }   
     }
+
     return validationErrors
 }
 
@@ -110,6 +113,8 @@ export default function Launcher() {
 
     const isStandaloneLaunch = launch_type.includes("standalone");
 
+    const isBackendService = launch_type === "backend-service";
+
     const { origin } = window.location;
 
     const backendOrigin = process.env.NODE_ENV === "development" ? pkg.proxy : origin;
@@ -121,7 +126,14 @@ export default function Launcher() {
     const iss = `${backendOrigin}/v/${fhir_version}/fhir`;
 
     // The URL to launch the sample app
-    let sampleLaunchUrl = new URL(isStandaloneLaunch ? "/sample-app" : "/sample-app/launch", origin);
+    let sampleLaunchUrl = new URL(
+        isBackendService ?
+            "/sample-app/launch-bs" :
+            isStandaloneLaunch ?
+                "/sample-app" :
+                "/sample-app/launch",
+        origin
+    );
     
     // The URL to launch the user-specified app
     let userLaunchUrl: URL | undefined;
@@ -132,7 +144,7 @@ export default function Launcher() {
         userLaunchUrl = new URL("/", origin);
     }
 
-    if (!isStandaloneLaunch) {
+    if (!isStandaloneLaunch && !isBackendService) {
         sampleLaunchUrl.searchParams.set("iss", iss);
         userLaunchUrl.searchParams.set("iss", iss);
 
@@ -182,7 +194,7 @@ export default function Launcher() {
             <div className="alert alert-success mt-2">
                 <h4 className="text-success mt-0">
                     <i className="glyphicon glyphicon-fire"/> {
-                    isStandaloneLaunch ? "Server's FHIR Base URL" : "App's Launch URL"
+                    isStandaloneLaunch || launch_type === "backend-service" ? "Server's FHIR Base URL" : "App's Launch URL"
                 }
                 </h4>
                 <div style={{ display: "flex" }}>
@@ -192,12 +204,12 @@ export default function Launcher() {
                                 id="launch-url"
                                 type="url"
                                 className="form-control"
-                                value={ isStandaloneLaunch ? aud : launch_url }
-                                onChange={ e => !isStandaloneLaunch && setQuery({ launch_url: e.target.value }) }
-                                readOnly={ isStandaloneLaunch }
+                                value={ isStandaloneLaunch || isBackendService ? aud : launch_url }
+                                onChange={ e => !isStandaloneLaunch && !isBackendService && setQuery({ launch_url: e.target.value }) }
+                                readOnly={ isStandaloneLaunch || isBackendService }
                             />
                             <span className="input-group-btn">
-                                { isStandaloneLaunch ? 
+                                { isStandaloneLaunch || isBackendService ? 
                                     <button className="btn btn-primary" onClick={() => copyElement("#launch-url")}>Copy</button> :
                                     validationErrors.length ? 
                                         <button className="btn btn-default" disabled>Launch</button> :
@@ -221,7 +233,7 @@ export default function Launcher() {
                         }
                     </div>
                 </div>
-                { isStandaloneLaunch ?
+                { isStandaloneLaunch || launch_type === "backend-service" ?
                     <span className="small text-muted">
                         Your app should use this url to connect to the sandbox FHIR server
                     </span> :
@@ -269,6 +281,10 @@ function ClientRegistrationTab() {
         }
     }, [jwksError])
 
+    const cvm = launch.launch_type === "backend-service" ?
+        "client-confidential-asymmetric" :
+        query.cvm;
+
     return (
         <>
             <div className="alert alert-info">
@@ -300,32 +316,7 @@ function ClientRegistrationTab() {
                             handles that.
                         </span>
                     </div>
-                </div>
 
-                <div className="col-sm-6">
-                    <div className="form-group">
-                        <label htmlFor="redirect_uris" className="text-primary">Redirect URIs</label>
-                        <input
-                            type="text"
-                            name="redirect_uris"
-                            id="redirect_uris"
-                            placeholder="redirect_uris"
-                            className="form-control"
-                            value={ launch.redirect_uris }
-                            onChange={ e => setQuery({ redirect_uris: e.target.value }) }
-                        />
-                        <span className="help-block small">
-                            Comma-separated list of redirect URIs. Leave this empty to
-                            allow any redirect URI. If URIs are specified and your
-                            redirect URL does not match any of them, you will get
-                            an <code>invalid redirect_uri</code> error.
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="row">
-                <div className="col-sm-6">
                     <div className="form-group">
                         <label htmlFor="scope" className="text-primary">Scopes</label>
                         <input
@@ -344,29 +335,62 @@ function ClientRegistrationTab() {
                             implicitly listed here, you will get an <code>invalid scope</code> error.
                         </span>
                     </div>
+
                 </div>
 
                 <div className="col-sm-6">
+                    { launch.launch_type !== "backend-service" &&
+                    <div className="form-group">
+                        <label htmlFor="redirect_uris" className="text-primary">Redirect URIs</label>
+                        <input
+                            type="text"
+                            name="redirect_uris"
+                            id="redirect_uris"
+                            placeholder="redirect_uris"
+                            className="form-control"
+                            value={ launch.redirect_uris }
+                            onChange={ e => setQuery({ redirect_uris: e.target.value }) }
+                        />
+                        <span className="help-block small">
+                            Comma-separated list of redirect URIs. Leave this empty to
+                            allow any redirect URI. If URIs are specified and your
+                            redirect URL does not match any of them, you will get
+                            an <code>invalid redirect_uri</code> error.
+                        </span>
+                    </div> }
+
                     <div className="form-group">
                         <label htmlFor="client_validation_method" className="text-primary">Client Identity Validation Method</label>
-                        <select id="client_validation_method" className="form-control" value={ query.cvm } onChange={e => setQuery({ cvm: e.target.value }) }>
-                            <option value="client-public">client-public</option>
-                            <option value="client-confidential-symmetric">client-confidential-symmetric</option>
+                        <select
+                            id="client_validation_method"
+                            className="form-control"
+                            value={ cvm }
+                            onChange={ e => setQuery({ cvm: e.target.value }) }
+                            disabled={launch.launch_type === "backend-service"}
+                        >
+                            <option value="client-public" disabled={launch.launch_type === "backend-service"}>client-public</option>
+                            <option value="client-confidential-symmetric" disabled={launch.launch_type === "backend-service"}>client-confidential-symmetric</option>
                             <option value="client-confidential-asymmetric">client-confidential-asymmetric</option>
                         </select>
                         <span className="help-block small">
-                            <b>Public clients</b> are validated based on the redirect_uri they use (use the Redirect URIs
-                            field to test that validation). <b>Symmetric confidential clients</b> use a client secret. <b>
-                            Asymmetric confidential clients</b> use a JWKS, either provided inline, or as an URL to the JWKS json. 
+                            { launch.launch_type !== "backend-service" ? (
+                                <>
+                                    <b>Public clients</b> are validated based on the redirect_uri they use (use
+                                    the Redirect URIs field to test that validation). <b>Symmetric confidential
+                                    clients</b> use a client secret. <b>Asymmetric confidential clients</b> use
+                                    a JWKS, either provided inline, or as an URL to the JWKS json. 
+                                </>
+                            ) : (
+                                <div style={{ marginBottom: 25 }}>
+                                    <b>Asymmetric confidential clients</b> use a JWKS, either provided inline, or
+                                    as an URL to the JWKS json.
+                                </div>
+                            )}
+                             
                         </span>
                     </div>
-                </div>
-            </div>
 
-            <div className="row">
-                <div className="col-sm-6 col-sm-offset-6">
-
-                    { query.cvm === "client-confidential-symmetric" && (
+                    { cvm === "client-confidential-symmetric" && (
                         <div className="form-group">
                             <label htmlFor="client_secret" className="text-primary">Client Secret</label>
                             <input
@@ -388,7 +412,7 @@ function ClientRegistrationTab() {
                         </div>
                     )}
 
-                    { query.cvm === "client-confidential-asymmetric" && (
+                    { cvm === "client-confidential-asymmetric" && (
                         <div className="form-group">
                             <ul className="nav nav-tabs small" role="tablist" style={{ marginBottom: 4 }}>
                                 <li role="presentation" className={ query.jwks_tab === "0" ? "active" : undefined } onClick={ () => setQuery({ jwks_tab: "0" }) }>
@@ -455,7 +479,7 @@ function LaunchTab() {
     return (
         <>
             <div className="row">
-                <div className="col-sm-6">
+                <div className={ launch.launch_type === "backend-service" ? "col-xs-12" : "col-sm-6" }>
                     <div className="form-group">
                         <label htmlFor="launch_type" className="text-primary">Launch Type</label>
                         <select
@@ -502,19 +526,19 @@ function LaunchTab() {
                                 >
                                     <option value="">None</option>
 
-                                    <optgroup label="During the authorize request">
+                                    { launch.launch_type !== "backend-service" && <optgroup label="During the authorize request">
                                         <option value="auth_invalid_client_id">invalid client_id</option>
                                         <option value="auth_invalid_redirect_uri">invalid redirect_uri</option>
                                         <option value="auth_invalid_scope">invalid scope</option>
                                         <option value="auth_invalid_client_secret">invalid client_secret</option>
-                                    </optgroup>
+                                    </optgroup> }
 
                                     <optgroup label="During the token request">
-                                        <option value="token_invalid_token">invalid client token</option>
-                                        <option value="token_expired_refresh_token">expired refresh token</option>
-                                        <option value="token_expired_registration_token">expired client token</option>
+                                        <option value="token_invalid_token">invalid token</option>
+                                        <option value="token_expired_registration_token">expired token</option>
+                                        { launch.launch_type !== "backend-service" && <option value="token_expired_refresh_token">expired refresh token</option> }
                                         <option value="token_invalid_scope">invalid scope</option>
-                                        <option value="token_invalid_jti">invalid jti (for backend services)</option>
+                                        { launch.launch_type === "backend-service" && <option value="token_invalid_jti">invalid jti</option> }
                                     </optgroup>
                                     
                                     <optgroup label="During FHIR requests">
@@ -529,6 +553,7 @@ function LaunchTab() {
                         </div>
                     </div>
 
+                    { launch.launch_type !== "backend-service" &&
                     <div className="form-group">
                         <div style={{ borderBottom: "1px solid #EEE" }}>
                             <label className="text-primary">Misc. Options</label>
@@ -582,69 +607,70 @@ function LaunchTab() {
                                 </label>
                             </div>
                         )}
-                    </div>
+                    </div>}
                 </div>
-                <div className="col-sm-6">
-                    <div className="form-group">
-                        <label htmlFor="patient" className="text-primary">Patient(s)</label>
-                        <PatientInput
-                            onChange={list => setQuery({ patient: list })}
-                            value={ launch.patient }
-                            fhirVersion={ query.fhir_version as any }
-                            inputProps={{
-                                name: "patient",
-                                id  : "patient",
-                                placeholder: "Patient ID(s)"
-                            }}
-                        />
-                        <span className="help-block small">
-                            Simulates the active patient in EHR when app is launched. If
-                            no Patient ID is entered or if multiple comma delimited IDs
-                            are specified, a patient picker will be displayed as part of
-                            the launch flow.
-                        </span>
-                    </div>
-
-                    { launch.launch_type !== "patient-portal" && launch.launch_type !== "patient-standalone" && (
+                { launch.launch_type !== "backend-service" ? 
+                    <div className="col-sm-6">
                         <div className="form-group">
-                            <label htmlFor="provider" className="text-primary">Provider(s)</label>
-                            <UserPicker
-                                fhirServerBaseUrl={fhirServerBaseUrl}
-                                onChange={ list => setQuery({ provider: list }) }
-                                value={ launch.provider }
+                            <label htmlFor="patient" className="text-primary">Patient(s)</label>
+                            <PatientInput
+                                onChange={list => setQuery({ patient: list })}
+                                value={ launch.patient }
+                                fhirVersion={ query.fhir_version as any }
                                 inputProps={{
-                                    name        : "provider",
-                                    id          : "provider",
-                                    placeholder : "Provider ID(s)",
-                                    autoComplete: "off"
+                                    name: "patient",
+                                    id  : "patient",
+                                    placeholder: "Patient ID(s)"
                                 }}
                             />
                             <span className="help-block small">
-                                Simulates user who is launching the app. If no provider is
-                                selected, or if multiple comma delimited Practitioner IDs
-                                are specified, a login screen will be displayed as part of
+                                Simulates the active patient in EHR when app is launched. If
+                                no Patient ID is entered or if multiple comma delimited IDs
+                                are specified, a patient picker will be displayed as part of
                                 the launch flow.
                             </span>
                         </div>
-                    )}
 
-                    <div className="form-group">
-                        <label htmlFor="encounter" className="text-primary">Encounter</label>
-                        <select
-                            name="encounter"
-                            id="encounter"
-                            className="form-control"
-                            value={ launch.encounter }
-                            onChange={ e => setQuery({ encounter: e.target.value }) }
-                        >
-                            <option value="AUTO">Select the most recent encounter if available</option>
-                            <option value="MANUAL">Manually select an encounter if available</option>
-                        </select>
-                        <span className="help-block small">
-                            How to select the current Encounter
-                        </span>
-                    </div>
-                </div>
+                        { launch.launch_type !== "patient-portal" && launch.launch_type !== "patient-standalone" && (
+                            <div className="form-group">
+                                <label htmlFor="provider" className="text-primary">Provider(s)</label>
+                                <UserPicker
+                                    fhirServerBaseUrl={fhirServerBaseUrl}
+                                    onChange={ list => setQuery({ provider: list }) }
+                                    value={ launch.provider }
+                                    inputProps={{
+                                        name        : "provider",
+                                        id          : "provider",
+                                        placeholder : "Provider ID(s)",
+                                        autoComplete: "off"
+                                    }}
+                                />
+                                <span className="help-block small">
+                                    Simulates user who is launching the app. If no provider is
+                                    selected, or if multiple comma delimited Practitioner IDs
+                                    are specified, a login screen will be displayed as part of
+                                    the launch flow.
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="form-group">
+                            <label htmlFor="encounter" className="text-primary">Encounter</label>
+                            <select
+                                name="encounter"
+                                id="encounter"
+                                className="form-control"
+                                value={ launch.encounter }
+                                onChange={ e => setQuery({ encounter: e.target.value }) }
+                            >
+                                <option value="AUTO">Select the most recent encounter if available</option>
+                                <option value="MANUAL">Manually select an encounter if available</option>
+                            </select>
+                            <span className="help-block small">
+                                How to select the current Encounter
+                            </span>
+                        </div>
+                    </div> : null }
             </div>
         </>
     )
