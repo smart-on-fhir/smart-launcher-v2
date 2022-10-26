@@ -188,6 +188,14 @@ describe("token endpoint", () => {
                 const txt = await res.text()
                 expect(txt).to.include("Invalid client_secret in the basic auth header")
             })
+
+            it ("Requires auth is client_secret is set in registration options", async () => {
+                const code = jwt.sign({ redirect_uri: "http://whatever", client_id: "whatever", client_secret: "secret" }, config.jwtSecret, { expiresIn: "5m" })
+                const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
+                expect(res.status).to.equal(401)
+                const txt = await res.text()
+                expect(txt).to.include("Basic authentication is required for confidential clients")
+            })
         })
 
         it ("Includes a refresh token if 'offline_access' scope is granted", async () => {
