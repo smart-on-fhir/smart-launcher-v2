@@ -4,6 +4,7 @@ import { fhirclient }                               from "fhirclient/lib/types"
 import { signCompactJws, importJWK }                from "fhirclient/lib/security/browser"
 import SyntaxHighlighter                            from "react-syntax-highlighter"
 import { xcode }                                    from "react-syntax-highlighter/dist/esm/styles/hljs"
+import Clip                                         from "../Clip"
 import { decode, encode }                           from "../../isomorphic/codec"
 import useFetch                                     from "../../hooks/useFetch"
 import { SMART }                                    from "../../.."
@@ -85,18 +86,22 @@ function WellKnownConfig({ state, dispatch }: StepProps)
             <div style={{ paddingLeft: 30 }}>
                 <details>
                     <summary className="text-info"><b>Request</b></summary>
-                    <SyntaxHighlighter language="http" style={xcode}>{
-                    `GET ${url.pathname} HTTP/1.1\n` +
-                    `Host: ${url.host}\n` +
-                    `accept: application/json\n`
-                    }</SyntaxHighlighter>
+                    <pre style={{ whiteSpace: "pre-wrap", padding: "2px 10px" }}>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>GET</b> <span style={{ color: "rgb(131, 108, 40)" }}>{url.pathname.replace(/\/sim\/.*?\//, "/sim/...../")} HTTP/1.1</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Host:</b> <span style={{ color: "rgb(131, 108, 40)" }}>{url.host}</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Accept:</b> <span style={{ color: "rgb(131, 108, 40)" }}>application/json</span></div>
+                    </pre>
                     <br/>
                 </details>
                 <details open={!!error}>
                     <summary className={ error ? "text-danger" : "text-success" }><b>Response</b></summary>
                     { error ?
                         <div className="alert alert-danger">{ error + "" }</div> :
-                        <SyntaxHighlighter language="json" style={xcode}>{ JSON.stringify(data, null, 4)}</SyntaxHighlighter> }
+                        <SyntaxHighlighter language="json" style={xcode}>{
+                            JSON.stringify(data || "null", null, 4)
+                                .replace(/\/sim\/.*?\//g, "/sim/...../")
+                        }
+                        </SyntaxHighlighter> }
                 </details>
             </div>
         </details>
@@ -245,21 +250,19 @@ function CreateAssertion({ state, dispatch }: StepProps)
         <details open={!!error}>
             <summary><b>3. Create Client Assertion Token</b></summary>
             <div style={{ paddingLeft: 30 }}>
-                <pre>
-                    <b className="text-danger">Pseudo Code:</b><br/><br/>
+                <br/>
+                <b className="text-danger">Pseudo Code:</b><br/><br/>
 
-                    <SyntaxHighlighter language="javascript" style={xcode}>{
-                    `jwt_headers = ${ JSON.stringify(jwt_headers, null, 4)}\n\n` +
-                    `jwt_claims = ${ JSON.stringify(jwt_claims, null, 4)}\n\n` +
-                    `private_key = ${ JSON.stringify(PRIVATE_JWT_RS384, null, 4) }\n\n` +
-                    `client_assertion = sign(jwt_claims, jwt_headers, private_key)\n`
-                    }</SyntaxHighlighter>
+                <SyntaxHighlighter language="javascript" style={xcode} wrapLongLines>{
+                `jwt_headers = ${ JSON.stringify(jwt_headers, null, 4)}\n\n` +
+                `jwt_claims = ${ JSON.stringify({ ...jwt_claims, aud: jwt_claims.aud.replace(/\/sim\/.*?\//g, "/sim/...../") }, null, 4)}\n\n` +
+                `private_key = ${ JSON.stringify(PRIVATE_JWT_RS384, null, 4) }\n\n` +
+                `client_assertion = sign(jwt_claims, jwt_headers, private_key)\n`
+                }</SyntaxHighlighter>
 
-                    <br/>
+                <br/>
 
-                    { error && <b className="text-danger">{error}</b> }
-    
-                </pre>
+                { error && <b className="text-danger">{error}</b> }
             </div>
         </details>
     );
@@ -306,23 +309,29 @@ function GetAccessToken({ state, dispatch }: StepProps)
             <div style={{ paddingLeft: 30 }}>
                 <details open>
                     <summary className="text-info"><b>Request</b></summary>
-                    <SyntaxHighlighter language="http" style={xcode}>{
-                        `POST ${url.pathname} HTTP/1.1\n` +
-                        `Host: ${url.host}\n` +
-                        "accept: application/json\n" +
-                        "content-type: application/x-www-form-urlencoded;charset=UTF-8\n" +
-                        "\n" +
-                        `scope=${encodeURIComponent(state.scope)}&client_assertion=${
-                        encodeURIComponent(state.assertion!)}&client_assertion_type=${
-                        encodeURIComponent("urn:ietf:params:oauth:client-assertion-type:jwt-bearer")}&grant_type=client_credentials\n`
-                    }</SyntaxHighlighter>
+                    <pre style={{ whiteSpace: "pre-wrap", padding: "2px 10px" }}>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>POST</b> <span style={{ color: "rgb(131, 108, 40)" }}>{url.pathname.replace(/\/sim\/.*?\//, "/sim/...../")} HTTP/1.1</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Host:</b> <span style={{ color: "rgb(131, 108, 40)" }}>{url.host}</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Accept:</b> <span style={{ color: "rgb(131, 108, 40)" }}>application/json</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Content-Type:</b> <span style={{ color: "rgb(131, 108, 40)" }}>application/x-www-form-urlencoded;charset=UTF-8</span></div>
+                        <br/>
+                        <div>
+                            <b style={{ color: "rgb(170, 13, 145)" }}>scope</b>=<span style={{ color: "rgb(131, 108, 40)" }}>{encodeURIComponent(state.scope)}</span><br/>
+                            <b style={{ color: "rgb(170, 13, 145)" }}>client_assertion</b>=<span style={{ color: "rgb(131, 108, 40)" }}><Clip txt={encodeURIComponent(state.assertion!)} max={40} /></span><br/>
+                            <b style={{ color: "rgb(170, 13, 145)" }}>client_assertion_type</b>=<span style={{ color: "rgb(131, 108, 40)" }}>{encodeURIComponent("urn:ietf:params:oauth:client-assertion-type:jwt-bearer")}</span><br />
+                            <b style={{ color: "rgb(170, 13, 145)" }}>grant_type</b>=<span style={{ color: "rgb(131, 108, 40)" }}>client_credentials</span>
+                        </div>
+                    </pre>
                     <br/>
                 </details>
                 <details open>
                     <summary className={ error ? "text-danger" : "text-success" }><b>Response</b></summary>
                     { error ?
                         <div className="alert alert-danger">{ error + "" }</div> :
-                        <SyntaxHighlighter language="json" style={xcode}>{ JSON.stringify(data, null, 4)}</SyntaxHighlighter> }
+                        <SyntaxHighlighter language="json" style={xcode} wrapLongLines>
+                            { JSON.stringify(data, null, 4)}
+                        </SyntaxHighlighter>
+                    }
                 </details>
             </div>
         </details>
@@ -348,19 +357,19 @@ function FetchPatients({ state }: { state: State })
             <div style={{ paddingLeft: 30 }}>
                 <details>
                     <summary className="text-info"><b>Request</b></summary>
-                    <SyntaxHighlighter language="http" style={xcode}>{
-                    `GET ${url.pathname} HTTP/1.1\n` +
-                    `Host: ${url.host}\n` +
-                    `Accept: application/json\n` +
-                    `Authorization: Bearer ${state.accessToken}\n`
-                    }</SyntaxHighlighter>
+                    <pre style={{ whiteSpace: "pre-wrap", padding: "2px 10px" }}>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>GET</b> <span style={{ color: "rgb(131, 108, 40)" }}>{url.pathname.replace(/\/sim\/.*?\//, "/sim/...../")} HTTP/1.1</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Host:</b> <span style={{ color: "rgb(131, 108, 40)" }}>{url.host}</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Accept:</b> <span style={{ color: "rgb(131, 108, 40)" }}>application/json</span></div>
+                        <div><b style={{ color: "rgb(170, 13, 145)" }}>Authorization:</b> <span style={{ color: "rgb(131, 108, 40)" }}>Bearer <Clip txt={state.accessToken} max={20} /></span></div>
+                    </pre>
                     <br/>
                 </details>
                 <details open>
                     <summary className={ error ? "text-danger" : "text-success" }><b>Response</b></summary>
                     { error ?
                         <div className="alert alert-danger">{ error + "" }</div> :
-                        <SyntaxHighlighter language="json" style={xcode}>{ JSON.stringify(data, null, 4)}</SyntaxHighlighter> }
+                        <SyntaxHighlighter language="json" style={xcode} wrapLongLines>{ JSON.stringify(data, null, 4)}</SyntaxHighlighter> }
                 </details>
             </div>
         </details>
