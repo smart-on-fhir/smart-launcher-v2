@@ -18,7 +18,7 @@ interface State {
     accessToken: string
     client: SMART.LaunchParams
     accessTokenExpiresAt: number
-    jwksUrl: string
+    jwksUrl?: string
 }
 
 interface StepProps {
@@ -114,7 +114,11 @@ function LaunchForm({ state, dispatch }: StepProps) {
             <div style={{ paddingLeft: 30 }}>
                 <form onSubmit={e => {
                     e.preventDefault()
-                    dispatch({ scope: _scope, clientId: _clientId, jwksUrl: _jwksUrl })
+                    dispatch({
+                        scope: _scope,
+                        clientId: _clientId,
+                        jwksUrl: state.client.jwks_url ? _jwksUrl : undefined
+                    })
                 }}>
                     <div className="panel mb-2" style={{ display: "block", background: "#F8F8F8" }}>
                         <div className="row">
@@ -169,34 +173,26 @@ function LaunchForm({ state, dispatch }: StepProps) {
                                 </div>
                             </div>
                         </div>
-                        <div className="row">
-                            <div className="col-xs-12">
-                                <div className="form-group">
-                                    <label className="text-primary" htmlFor="jwks_url">JWKS URL</label>
-                                    <input
-                                        id="jwks_url"
-                                        className="form-control"
-                                        type="text"
-                                        value={ _jwksUrl }
-                                        onChange={ e => setJwksUrl(e.target.value) }
-                                    />
-                                    <span className="help-block small">
-                                        {
-                                            state.client.jwks_url ? 
-                                            <>
-                                                Your registered client states that your public keys are at <code>{ state.client.jwks_url }</code>. You
-                                                can try using a different URL here to test with different key set or to produce an error.
-                                            </> :
-                                            <>
-                                                You have not specified any <b>JWKS URL</b> in the registration options of the launcher.
-                                                You must specify the URL to your JWKS here, or the app won't be able to authorize
-                                                (unless you have provided a JWKS json in the registration options).
-                                            </>
-                                        }
-                                    </span>
+                        { state.client.jwks_url && (
+                            <div className="row">
+                                <div className="col-xs-12">
+                                    <div className="form-group">
+                                        <label className="text-primary" htmlFor="jwks_url">JWKS URL</label>
+                                        <input
+                                            id="jwks_url"
+                                            className="form-control"
+                                            type="text"
+                                            value={ _jwksUrl }
+                                            onChange={ e => setJwksUrl(e.target.value) }
+                                        />
+                                        <span className="help-block small">
+                                            Your registered client states that your public keys are at <code>{ state.client.jwks_url }</code>. You
+                                            can try using different URL here to see what error is received.
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
                         <hr/>
                         <button className="btn btn-primary pl-2 pr-2" type="submit">Launch</button>
                     </div>
@@ -218,6 +214,10 @@ function CreateAssertion({ state, dispatch }: StepProps)
         kid: PRIVATE_JWT_RS384.kid,
         jku: state.jwksUrl
     };
+
+    if (state.jwksUrl) {
+        jwt_headers.jku = state.jwksUrl
+    }
 
     const jwt_claims = {
         iss: state.clientId,
@@ -386,7 +386,7 @@ export default function LaunchBS() {
             tokenEndpoint: "",
             accessToken  : "",
             assertion    : "",
-            jwksUrl      : "https://www.hl7.org/fhir/smart-app-launch/RS384.public.json",
+            jwksUrl      : client.jwks_url || undefined,
             accessTokenExpiresAt: Date.now(),
             client
         }
