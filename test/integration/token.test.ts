@@ -719,44 +719,6 @@ describe("token endpoint", () => {
                 expect(json.error_description).to.equal("Missing token 'alg' header")
             })
 
-            // it ("fails if token.sub is not a JWT", async () => {
-            //     const redirect_uri = "http://localhost";
-            //     const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
-            //     const publicKey = privateKey.toJSON(false);
-                
-            //     // @ts-ignore
-            //     publicKey.key_ops = [ "verify" ]
-
-            //     const code = jwt.sign({ redirect_uri, scope: "offline_access" }, config.jwtSecret);
-
-            //     const assertion = jwt.sign(
-            //         {
-            //             iss: "x",
-            //             sub: "x",
-            //             aud: "x",
-            //             exp: 1,
-            //             jti: "x"
-            //         },
-            //         privateKey.toPEM(true),
-            //         {
-            //             algorithm: privateKey.alg as jwt.Algorithm,
-            //             keyid    : privateKey.kid
-            //         }
-            //     );
-                
-            //     const res = await fetchAccessToken({
-            //         code,
-            //         redirect_uri,
-            //         client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-            //         client_assertion: assertion
-            //     })
-
-            //     expect(res.ok).to.equal(false)
-            //     const json = await res.json()
-            //     expect(json.error).to.equal("invalid_client")
-            //     expect(json.error_description).to.equal("Invalid client details token: jwt malformed")
-            // })
-
             it ("can simulate token_expired_registration_token", async () => {
                 const redirect_uri = "http://localhost";
                 const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
@@ -910,85 +872,6 @@ describe("token endpoint", () => {
                 expect(json.error_description).to.equal(`Invalid token 'aud' value (x). Must be '${LAUNCHER.baseUrl + "/v/r4/auth/token"}'.`)
             })
 
-            it ("throws if jku is not whitelisted", async () => {
-                const redirect_uri = "http://localhost";
-                const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
-                const publicKey = privateKey.toJSON(false)
-                
-                // @ts-ignore
-                publicKey.key_ops = [ "verify" ]
-
-                const code = jwt.sign({
-                    redirect_uri,
-                    scope: "offline_access",
-                    // jwks: { keys: [ publicKey ] },
-                    jwks_url: "a"
-                }, config.jwtSecret);
-                
-                const assertion = jwt.sign(
-                    {
-                        iss: code,
-                        sub: code,
-                        aud: LAUNCHER.baseUrl + "/v/r4/auth/token",
-                        exp: 1,
-                        jti: "x"
-                    },
-                    privateKey.toPEM(true),
-                    {
-                        algorithm: privateKey.alg as jwt.Algorithm,
-                        keyid    : privateKey.kid,
-                        header: {
-                            alg: privateKey.alg as jwt.Algorithm,
-                            jku: "b"
-                        }
-                    }
-                );
-                
-                const res = await fetchAccessToken({
-                    code,
-                    redirect_uri,
-                    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                    client_assertion: assertion
-                })
-
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("jku 'b' not whitelisted. Allowed: 'a'")
-            })
-
-            it ("throws if no jwks or jwks_url is specified", async () => {
-                const redirect_uri = "http://localhost";
-                const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
-                const publicKey = privateKey.toJSON(false);
-                
-                // @ts-ignore
-                publicKey.key_ops = [ "verify" ]
-
-                const code = jwt.sign({
-                    redirect_uri,
-                    scope: "offline_access"
-                }, config.jwtSecret);
-                
-                const assertion = createClientAssertion({
-                    tokenUrl: LAUNCHER.baseUrl + "/v/r4/auth/token",
-                    clientId: code,
-                    privateKey,
-                })
-                
-                const res = await fetchAccessToken({
-                    code,
-                    redirect_uri,
-                    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                    client_assertion: assertion
-                })
-
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("No JWKS or JWKS URL found for this launch")
-            })
-
             it ("throws if jku is not a valid URL", async () => {
                 const redirect_uri = "http://localhost";
                 const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
@@ -1129,7 +1012,7 @@ describe("token endpoint", () => {
                 
                 beforeEach(() => JWKS_MOCK_SERVER.clear());
 
-                async function test(mockOptions: MockOptions) {
+                async function test(mockOptions: MockOptions, jku?: string) {
                     JWKS_MOCK_SERVER.mock("/jwks", mockOptions)
                     const redirect_uri = "http://localhost";
                     const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
@@ -1149,13 +1032,17 @@ describe("token endpoint", () => {
                             iss: code,
                             sub: code,
                             aud: LAUNCHER.baseUrl + "/v/r4/auth/token",
-                            exp: 1,
                             jti: "x"
                         },
                         privateKey.toPEM(true),
                         {
                             algorithm: privateKey.alg as jwt.Algorithm,
-                            keyid    : privateKey.kid
+                            keyid    : privateKey.kid,
+                            expiresIn: "1 min",
+                            header: {
+                                alg: privateKey.alg as jwt.Algorithm,
+                                jku
+                            }
                         }
                     );
                     
@@ -1215,20 +1102,12 @@ describe("token endpoint", () => {
                     expect(json.error_description).to.equal(`No usable keys found`)
                 })
 
-                // it ("fails if the none of the keys have a key_ops array", async () => {
-                //     const res = await test({ body: { keys: [ {}, {} ] } })
-                //     expect(res.ok).to.equal(false)
-                //     const json = await res.json()
-                //     expect(json.error).to.equal("invalid_client")
-                //     expect(json.error_description).to.equal(`None of the keys found in the JWKS have the key_ops array property`)
-                // })
-
                 it ("fails if the none of the keys have an alg property", async () => {
                     const res = await test({ body: { keys: [ { key_ops: [] }, { key_ops: [] } ] } })
                     expect(res.ok).to.equal(false)
                     const json = await res.json()
                     expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`None of the keys found in the JWKS alg equal to ES384`)
+                    expect(json.error_description).to.equal(`None of the keys found in the JWKS have alg equal to ES384`)
                 })
 
                 it ("fails if the none of the keys have the needed kid", async () => {
@@ -1236,21 +1115,13 @@ describe("token endpoint", () => {
                     expect(res.ok).to.equal(false)
                     const json = await res.json()
                     expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`None of the keys found in the JWKS kid equal to ${ES384_JWK.kid}`)
+                    expect(json.error_description).to.equal(`None of the keys found in the JWKS have kid equal to ${ES384_JWK.kid}`)
                 })
-
-                // it ("fails if the none of the keys have 'verify' in their key_ops", async () => {
-                //     const res = await test({ body: { keys: [ { key_ops: [], alg: "ES384", kid: ES384_JWK.kid } ]}})
-                //     expect(res.ok).to.equal(false)
-                //     const json = await res.json()
-                //     expect(json.error).to.equal("invalid_client")
-                //     expect(json.error_description).to.equal(`No usable public keys found in the JWKS`)
-                // })
 
                 it ("fails if multiple keys match all requirements", async () => {
                     const res = await test({ body: { keys: [
-                        { key_ops: [ "verify" ], alg: "ES384", kid: ES384_JWK.kid },
-                        { key_ops: [ "verify" ], alg: "ES384", kid: ES384_JWK.kid }
+                        { ...ES384_JWK, key_ops: [ "verify" ] },
+                        { ...ES384_JWK, key_ops: [ "verify" ] }
                     ]}})
                     expect(res.ok).to.equal(false)
                     const json = await res.json()
@@ -1266,17 +1137,15 @@ describe("token endpoint", () => {
                     expect(json.error_description).to.include(`No usable public key found in the JWKS.`)
                 })
 
-                it ("fails with bad jwk JWK", async () => {
-                    const res = await test({ body: { keys: [{ ...ES384_JWK, key_ops: [ "verify" ], "d": "whatever" }]}})
+                it ("throws if jku is not whitelisted", async () => {
+                    const res = await test({ body: { keys: [{ ...ES384_JWK, key_ops: [ "verify" ] }]}}, "a")
                     expect(res.ok).to.equal(false)
                     const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.include(`Invalid token`)
+                    expect(json.error).to.equal("invalid_request")
+                    expect(json.error_description).to.equal(`Invalid jku header of the assertion token token. must be '${JWKS_MOCK_SERVER.baseUrl}/jwks'`)
                 })
             })
-        })
-
-        
+        })        
     })
 
     it ("rejects token requests with invalid redirect_uri param", async () => {
@@ -1775,6 +1644,225 @@ describe("token endpoint", () => {
             const json = await res.json()
             const token = jwt.decode(json.access_token, { json: true })
             expect(token!.sim_error).to.equal("Token expired (simulated error)")
+        })
+
+        it ("throws if no usable keys are found at jwks_url", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                jwks_url: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384",
+                    jku: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                }
+            });
+
+            JWKS_MOCK_SERVER.mock("/jwks", { body: { keys: [] }})
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("No usable keys found")
+        })
+
+        it ("throws if no usable keys are found at jwks", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                jwks: '{"keys":[]}'
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid
+            });
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("No usable keys found")
+        })
+
+        it ("discards private keys", async () => {
+            
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                jwks: `{"keys":[${JSON.stringify({ ...PRIVATE_KEY, key_ops: ["sign"] })}]}`
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384"
+                }
+            });
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("No usable public keys found in the JWKS")
+        })
+
+        it ("rejects if the assertion is signed with incorrect key", async () => {
+            
+
+            const publicKeyJson = {
+                "kty": "EC",
+                "crv": "P-384",
+                "x": "N0Vb8O8FJsTBmNA9UJpZ9hBqJ2TFC_4fX5hdGLug2t_oyV2SiaWYfAojMxEZKjBG",
+                "y": "rEbpVU151MplqmlkVXPkxlTmJsI3vMKX1bXJN2EmTS9Xoxy1JPFYeCoz0N2seJ5J",
+                "key_ops": [
+                    "verify"
+                ],
+                "ext": true,
+                "kid": "e8894718eb4db767648af58ee0dee637",
+                "alg": "ES384"
+            };
+
+            const privateKeyJson = {
+                "kty": "EC",
+                "crv": "P-384",
+                "d": "MJLNOYlQOneXtxtM9N4eWbbDfgEDZiGbikjtXLSNtmX8GooUVnEsXY1tyzj0o0Va",
+                "x": "9RbtDmsS-JCF9lTmr_JCw-CScrFF9myiw0A7t6-rQIXieX_Y1OhkUVqtRZyXAkl8",
+                "y": "UsvteTSwr0yF2TjKdLrOJH0PS8Fh11cxKH1cge3WXCbSK60X6XOABbe4Bx_mDg7s",
+                "key_ops": [
+                    "sign"
+                ],
+                "ext": true,
+                "kid": "e8894718eb4db767648af58ee0dee637",
+                "alg": "ES384"
+            };
+
+            const privateKey = await jose.JWK.asKey(privateKeyJson, "json")
+
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                jwks: `{"keys":[${JSON.stringify(publicKeyJson)}]}`
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            },
+            privateKey.toPEM(true),
+            {
+                expiresIn: "10m",
+                keyid: privateKeyJson.kid,
+                header: {
+                    alg: "ES384"
+                }
+            });
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Invalid token. invalid signature")
+        })
+
+        it ("handles repeated keys", async () => {
+
+            const sim: SMART.LaunchParams = {
+                launch_type: "backend-service",
+                jwks: JSON.stringify({
+                    keys: [
+                        { ...PRIVATE_KEY, key_ops: ["verify"] },
+                        { ...PRIVATE_KEY, key_ops: ["verify"] }
+                    ]
+                })
+            };
+
+            const tokenUrl = getTokenURL({ sim });
+
+            const assertion = jwt.sign({
+                iss: "whatever",
+                sub: "whatever",
+                aud: tokenUrl.href,
+                jti: "random-non-reusable-jwt-id-123"
+            }, jwk2pem(PRIVATE_KEY), {
+                expiresIn: "10m",
+                keyid: PRIVATE_KEY.kid,
+                header: {
+                    alg: "RS384"
+                }
+            });
+
+            const res = await fetchAccessToken({
+                grant_type: "client_credentials",
+                scope: "system/*.read",
+                client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                client_assertion: assertion,
+                sim
+            })
+
+            expect(res.status).to.equal(401)
+            const json = await res.json()
+            // console.log(json)
+            expect(json.error).to.equal("invalid_client")
+            expect(json.error_description).to.equal("Multiple usable public keys found in the JWKS")
+
         })
     });
 })

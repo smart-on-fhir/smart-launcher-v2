@@ -15,6 +15,17 @@ import {
 } from "../../errors"
 import { decode } from "../../../src/isomorphic/codec"
 
+function removeDuplicateKeys(keys: JsonWebKey[])
+{
+    return keys.reduce((prev, cur) => {
+        // @ts-ignore
+        if (!prev.find((k: any) => k.kid === cur.kid)) {
+            prev.push(cur)
+        }
+        return prev
+    }, [] as JsonWebKey[]);
+}
+
 
 export default class TokenHandler {
     protected request: Request;
@@ -246,7 +257,7 @@ export default class TokenHandler {
      * (https://www.rfc-editor.org/rfc/rfc7523#section-3) including validation
      * of the signature on the JWT.
      */
-    public async validateClientAssertion(clientAssertion: string, client: Partial<SMART.AuthorizationToken>) {
+    public async validateClientAssertion(clientAssertion: string, client: Partial<SMART.AuthorizationToken>): Promise<void> {
 
         // client_assertion must be a token ------------------------------------
         try {
@@ -319,62 +330,62 @@ export default class TokenHandler {
             ).status(401)
         }
 
-
-
-        let jwks: SMART.JWKS;
-
-        // If the jku header is present, verify that the jku is whitelisted
-        // (i.e., that it matches the value supplied at registration time for
-        // the specified `client_id`).
-        if (jwtHeaders.jku) {
-
-            // If the jku header is not whitelisted, the signature verification
-            // fails. In our case we only have a single registration-time
-            // jwks_url, so we use a simple comparison here
-            if (client.jwks_url && jwtHeaders.jku !== client.jwks_url) {
-                throw new InvalidClientError(
-                    "jku '%s' not whitelisted. Allowed: '%s'",
-                    jwtHeaders.jku,
-                    client.jwks_url
-                ).status(401);
-            }
-
-            jwks = await this.fetchJwks(jwtHeaders.jku)
+        // If neither jwks nor jwks_uri is set in "App Registration Options",
+        // disable client authn checks. Just make sure a well-formed JWS is
+        // present in the client assertion, and consider it "valid" if so.
+        // (This is similar to how we disable client authn checks for symmetric
+        // authn, if no client secret is set in app registration.)
+        if (!client.jwks_url && !client.jwks) {
+            return;
         }
 
-        // If the jku header is absent, create a set of potential key sources
-        // consisting of all keys found in the registration-time JWKS or found
-        // by dereferencing the registration-time JWK Set URL.
-        else {
-            if (client.jwks_url) {
-                jwks = await this.fetchJwks(client.jwks_url);
-            }
+        // Build a set of "allowed keys" as the union of all keys in jwks and
+        // all keys in jwks_uri
+        // ---------------------------------------------------------------------
+        const unionJWKS: { keys: any[] } = { keys: [] };
 
-            else if (client.jwks) {
-                if (typeof client.jwks === "string") {
-                    try {
-                        jwks = JSON.parse(client.jwks)
-                    } catch {
-                        throw new InvalidClientError("Invalid JWKS json").status(401)
-                    }
-                } else {
-                    jwks = client.jwks
+        if (client.jwks_url) {
+            let jwks = await this.fetchJwks(client.jwks_url);
+            // jwks.keys = removeDuplicateKeys(jwks.keys);
+            this.validateJwks(jwks)
+            unionJWKS.keys.push(...jwks.keys)
+        }
+
+        if (client.jwks) {
+            let jwks;
+            if (typeof client.jwks === "string") {
+                try {
+                    jwks = JSON.parse(client.jwks)
+                } catch {
+                    throw new InvalidClientError("Invalid JWKS json").status(401)
                 }
+            } else {
+                jwks = client.jwks
             }
-
-            else {
-                throw new InvalidClientError("No JWKS or JWKS URL found for this launch").status(401)
-            }
+            // jwks.keys = removeDuplicateKeys(jwks.keys);
+            this.validateJwks(jwks)
+            unionJWKS.keys.push(...jwks.keys)
         }
 
-        this.validateJwks(jwks)
-
-        const key = await this.pickPublicKey(jwks.keys, jwtHeaders.kid, jwtHeaders.alg)
+        // Check whether the JWS is valid and signed with one of the allowed keys
+        // ---------------------------------------------------------------------
+        const key = await this.pickPublicKey(unionJWKS.keys, jwtHeaders.kid, jwtHeaders.alg)
 
         try {
             jwt.verify(clientAssertion, key.toPEM(), { algorithms: config.supportedAlgorithms as jwt.Algorithm[] });
         } catch (ex) {
-            throw new InvalidClientError("Invalid token. %s", ex).status(401)
+            throw new InvalidClientError("Invalid token. %s", (ex as Error).message).status(401)
+        }
+
+        // If jku is present as a JWS header, check that an identical jwks_uri
+        // was included in "App Registration" options, because
+        // https://hl7.org/fhir/smart-app-launch/client-confidential-asymmetric.html
+        // says: "When present, this SHALL match the JWKS URL value that the
+        // client supplied to the FHIR authorization server at client registration
+        // time."
+        // ---------------------------------------------------------------------
+        if (jwtHeaders.jku && jwtHeaders.jku !== client.jwks_url) {
+            throw new InvalidRequestError("Invalid jku header of the assertion token token. must be '%s'", client.jwks_url).status(401)
         }
     }
 
@@ -427,23 +438,27 @@ export default class TokenHandler {
         let _keys = keys.filter(k => k.alg === alg);
 
         if (!_keys.length) {
-            throw new InvalidClientError('None of the keys found in the JWKS alg equal to %s', alg).status(401);
+            throw new InvalidClientError('None of the keys found in the JWKS have alg equal to %s', alg).status(401);
         }
 
         // @ts-ignore
-        _keys = keys.filter(k => k.kid === kid);
+        _keys = _keys.filter(k => k.kid === kid);
 
         if (!_keys.length) {
-            throw new InvalidClientError('None of the keys found in the JWKS kid equal to %s', kid).status(401);
+            throw new InvalidClientError('None of the keys found in the JWKS have kid equal to %s', kid).status(401);
         }
 
         // @ts-ignore
-        _keys = keys.filter(k => !k.key_ops?.includes("sign"));
+        _keys = _keys.filter(k => !k.key_ops?.includes("sign"));
 
         // If no keys match the verification fails.
         if (!_keys.length) {
             throw new InvalidClientError('No usable public keys found in the JWKS').status(401);
         }
+
+        // Filter duplicate keys (by kid)
+        // _keys = removeDuplicateKeys(_keys);
+        // console.log(_keys)
 
         // If more than one key matches, the verification fails.
         if (_keys.length > 1) {
