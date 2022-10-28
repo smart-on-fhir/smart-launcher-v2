@@ -22,6 +22,20 @@ export const launchTypes: SMART.LaunchType[] = [
     "backend-service"
 ];
 
+export const clientTypes: SMART.SMARTClientType[] = [
+    "public",
+    "confidential-symmetric",
+    "confidential-asymmetric",
+    "backend-service"
+];
+
+export const PKCEValidationTypes: SMART.PKCEValidation[] = [
+    "none",
+    "auto",
+    "always"
+];
+
+
 /**
  * Used on the front-end to encode launch parameters
  */
@@ -48,7 +62,10 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
             "", // params.client_secret
             params.auth_error    || "",
             params.jwks_url      || "",
-            params.jwks          || ""
+            params.jwks          || "",
+            params.validation    || 0,
+            3, // client_type = backend-service
+            0, // pkce = none
         ]))
     }
 
@@ -66,7 +83,10 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         params.client_secret || "",
         params.auth_error    || "",
         params.jwks_url      || "",
-        params.jwks          || ""
+        params.jwks          || "",
+        params.validation    || 0,
+        clientTypes.indexOf(params.client_type || "public"),
+        PKCEValidationTypes.indexOf(params.pkce || "auto")
     ];
 
     return base64UrlEncode(JSON.stringify(arr))
@@ -98,7 +118,10 @@ export function decode(launch: string): SMART.LaunchParams {
         client_secret: arr[10] || "",
         auth_error   : arr[11] || "",
         jwks_url     : arr[12] || "",
-        jwks         : arr[13] || ""
+        jwks         : arr[13] || "",
+        validation   : arr[14] || 0,
+        client_type  : clientTypes[arr[15]],
+        pkce         : PKCEValidationTypes[arr[16]]
     }
 }
 

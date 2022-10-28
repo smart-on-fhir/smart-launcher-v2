@@ -1,15 +1,20 @@
-import { expect, use }      from "chai"
-import crypto               from "crypto"
-import jwt                  from "jsonwebtoken"
-import fetch                from "cross-fetch"
-import chaiAsPromised       from "chai-as-promised"
-import { LAUNCHER }         from "../TestContext"
-import config               from "../../backend/config"
-import jose                 from "node-jose"
+import { expect, use }             from "chai"
+import crypto                      from "crypto"
+import jwt                         from "jsonwebtoken"
+import fetch                       from "cross-fetch"
+import chaiAsPromised              from "chai-as-promised"
+import jose                        from "node-jose"
+import { jwk2pem }                 from "pem-jwk"
+import { LAUNCHER }                from "../TestContext"
+import config                      from "../../backend/config"
+import { SMART }                   from "../.."
 import MockServer, { MockOptions } from "../MockServer"
-import { fetchAccessToken, createClientAssertion, getTokenURL } from "../lib"
-import { SMART } from "../.."
-import { jwk2pem } from "pem-jwk"
+import {
+    fetchAccessToken,
+    createClientAssertion,
+    getTokenURL,
+    expectOauthError
+} from "../lib"
 
 use(chaiAsPromised);
 
@@ -18,15 +23,12 @@ describe("token endpoint", () => {
 
     it ("requires application/x-www-form-urlencoded content type", async () => {
         const res = await fetchAccessToken({ requestOptions: { headers: { "content-type": "text/plain" }}});
-        expect(res.status).to.equal(400)
-        expect(await res.text()).to.include("Invalid request content-type header 'text/plain' (must be 'application/x-www-form-urlencoded')")
+        await expectOauthError(res, 400, "invalid_request", "Invalid request content-type header 'text/plain' (must be 'application/x-www-form-urlencoded')")
     })
 
     it ("rejects unsupported grant_type", async () => {
         const res = await fetchAccessToken({ grant_type: "bad_grant_type" });
-        expect(res.status).to.equal(400)
-        const txt = await res.text()
-        expect(txt).to.include('Invalid or missing grant_type parameter ')
+        await expectOauthError(res, 400, "unsupported_grant_type", 'Invalid or missing grant_type parameter "bad_grant_type"')
     })
 
     it ("Inject invalid authorization token error (to be thrown while requesting FHIR data)", async () => {
@@ -48,45 +50,36 @@ describe("token endpoint", () => {
     it ("Can simulate invalid authorization token error", async () => {
         const code = jwt.sign({ redirect_uri: "http://whatever", scope: "offline_access", auth_error: "token_invalid_token" }, config.jwtSecret);
         const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
-        expect(res.status).to.equal(401)
-        const txt = await res.text()
-        expect(txt).to.include("Simulated invalid client error")
+        await expectOauthError(res, 401, "invalid_client", "Simulated invalid client error")
     })
 
     describe("authorization_code flow", () => {
 
         it ("requires code parameter", async () => {
             const res = await fetchAccessToken({ code: "", redirect_uri: "http://whatever" })
-            expect(res.status).to.equal(400)
-            expect(await res.text()).to.include("Missing 'code' parameter")
+            await expectOauthError(res, 400, "invalid_client", "Missing 'code' parameter")
         })
 
         it ("requires redirect_uri parameter", async () => {
             const res = await fetchAccessToken({ code: "whatever", redirect_uri: "" })
-            expect(res.status).to.equal(400)
-            expect(await res.text()).to.include("Missing 'redirect_uri' parameter")
+            await expectOauthError(res, 400, "invalid_request", "Missing 'redirect_uri' parameter")
         })
 
         it ("verifies that 'code' is a signed token", async () => {
             const res = await fetchAccessToken({ code: "whatever", redirect_uri: "http://whatever" })
-            expect(res.status).to.equal(401)
-            expect(await res.text()).to.include("Invalid token")
+            await expectOauthError(res, 401, "invalid_client", /^Invalid token/)
         })
 
         it ("Requires the 'code' token to include redirect_uri", async () => {
             const code = jwt.sign({ redirect_uri: "" }, config.jwtSecret, { expiresIn: "5m" })
             const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
-            expect(res.status).to.equal(401)
-            const txt = await res.text()
-            expect(txt).to.include("The authorization token must include redirect_uri")
+            await expectOauthError(res, 401, "invalid_client", "The authorization token must include redirect_uri")
         })
 
         it ("Requires the 'code' token to have the same redirect_uri as the redirect_uri parameter", async () => {
             const code = jwt.sign({ redirect_uri: "http://whatever1" }, config.jwtSecret, { expiresIn: "5m" })
             const res = await fetchAccessToken({ code, redirect_uri: "http://whatever2" })
-            expect(res.status).to.equal(401)
-            const txt = await res.text()
-            expect(txt).to.include("Invalid redirect_uri parameter")
+            await expectOauthError(res, 401, "invalid_request", "Invalid redirect_uri parameter")
         })
 
         // PKCE behavior is added to the token endpoint if the code token has code_challenge_method
@@ -98,9 +91,7 @@ describe("token endpoint", () => {
                     code_challenge_method: "test"
                 }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
-                expect(res.status).to.equal(400)
-                const txt = await res.text()
-                expect(txt).to.include("Unsupported code_challenge_method 'test'. We support only 'S256'")
+                await expectOauthError(res, 400, "invalid_request", "Unsupported code_challenge_method 'test'. We support only 'S256'")
             })
 
             it ("Requires code_verifier", async () => {
@@ -109,9 +100,7 @@ describe("token endpoint", () => {
                     code_challenge_method: "S256"
                 }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
-                expect(res.status).to.equal(400)
-                const txt = await res.text()
-                expect(txt).to.include("Missing code_verifier parameter")
+                await expectOauthError(res, 400, "invalid_request", "Missing code_verifier parameter")
             })
 
             it ("Verifies code_challenge", async () => {
@@ -139,62 +128,108 @@ describe("token endpoint", () => {
 
                 const res2 = await fetchAccessToken({ code: code2, redirect_uri: "http://whatever", code_verifier: codeVerifier })
 
-                expect(res2.status).to.equal(401)
-                const txt = await res2.text()
-                expect(txt).to.match(/Invalid grant or Invalid PKCE Verifier/)
+                await expectOauthError(res2, 401, "invalid_grant", /Invalid grant or Invalid PKCE Verifier/)
 
             })
-
         })
 
         describe("Basic auth", () => {
 
             it ("Can simulate invalid client secret error", async () => {
-                const code = jwt.sign({ redirect_uri: "http://whatever", auth_error: "auth_invalid_client_secret" }, config.jwtSecret, { expiresIn: "5m" })
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    auth_error: "auth_invalid_client_secret",
+                    validation: 1,
+                    client_type: "confidential-symmetric"
+                }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
-                expect(res.status).to.equal(401)
-                const txt = await res.text()
-                expect(txt).to.include("Simulated invalid client secret error")
+                await expectOauthError(res, 401, "invalid_client", "Simulated invalid client secret error")
+            })
+
+            it ("Rejects strict clients without secret", async () => {
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    validation: 1,
+                    client_type: "confidential-symmetric"
+                }, config.jwtSecret, { expiresIn: "5m" })
+                const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
+                await expectOauthError(res, 401, "invalid_client", "The client has no client_secret defined")
+            })
+
+            it ("Ignores validation is needed", async () => {
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    validation: 0,
+                    client_type: "confidential-symmetric"
+                }, config.jwtSecret, { expiresIn: "5m" })
+                const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
+                expect(res.status).to.equal(200)
             })
 
             it ("Rejects empty authorization header", async () => {
-                const code = jwt.sign({ redirect_uri: "http://whatever" }, config.jwtSecret, { expiresIn: "5m" })
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    validation: 1,
+                    client_type: "confidential-symmetric",
+                    client_secret: "test-secret"
+                }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
-                expect(res.status).to.equal(401)
-                const txt = await res.text()
-                expect(txt).to.include("The authorization header 'Basic' cannot be empty")
+                await expectOauthError(res, 401, "invalid_request", "The authorization header 'Basic' cannot be empty")
             })
 
             it ("Parses the authorization header", async () => {
-                const code = jwt.sign({ redirect_uri: "http://whatever" }, config.jwtSecret, { expiresIn: "5m" })
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    validation: 1,
+                    client_type: "confidential-symmetric",
+                    client_secret: "test-secret"
+                }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic test" }}})
-                expect(res.status).to.equal(401)
-                const txt = await res.text()
-                expect(txt).to.include("The decoded header must contain '{client_id}:{client_secret}'")
+                await expectOauthError(res, 401, "invalid_request", "The decoded header must contain '{client_id}:{client_secret}'")
             })
 
             it ("Validates the client_id", async () => {
-                const code = jwt.sign({ redirect_uri: "http://whatever", client_id: "whatever" }, config.jwtSecret, { expiresIn: "5m" })
-                const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic " + Buffer.from("test:pass").toString("base64") }}})
-                expect(res.status).to.equal(401)
-                const txt = await res.text()
-                expect(txt).to.include("Invalid client_id in the basic auth header")
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    client_id: "whatever",
+                    validation: 1,
+                    client_type: "confidential-symmetric",
+                    client_secret: "test-secret"
+                }, config.jwtSecret, { expiresIn: "5m" })
+                const res = await fetchAccessToken({
+                    code,
+                    redirect_uri: "http://whatever",
+                    requestOptions: {
+                        headers: {
+                            authorization: "Basic " + Buffer.from("test:pass").toString("base64")
+                        }
+                    }
+                })
+                await expectOauthError(res, 401, "invalid_client", "Invalid client_id in the basic auth header")
             })
 
             it ("Validates the client_secret", async () => {
-                const code = jwt.sign({ redirect_uri: "http://whatever", client_id: "whatever", client_secret: "secret" }, config.jwtSecret, { expiresIn: "5m" })
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    client_id: "whatever",
+                    client_secret: "secret",
+                    validation: 1,
+                    client_type: "confidential-symmetric"
+                }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic " + Buffer.from("whatever:pass").toString("base64") }}})
-                expect(res.status).to.equal(401)
-                const txt = await res.text()
-                expect(txt).to.include("Invalid client_secret in the basic auth header")
+                await expectOauthError(res, 401, "invalid_client", "Invalid client_secret in the basic auth header")
             })
 
             it ("Requires auth is client_secret is set in registration options", async () => {
-                const code = jwt.sign({ redirect_uri: "http://whatever", client_id: "whatever", client_secret: "secret" }, config.jwtSecret, { expiresIn: "5m" })
+                const code = jwt.sign({
+                    redirect_uri: "http://whatever",
+                    client_id: "whatever",
+                    client_secret: "secret",
+                    validation: 1,
+                    client_type: "confidential-symmetric"
+                }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
-                expect(res.status).to.equal(401)
-                const txt = await res.text()
-                expect(txt).to.include("Basic authentication is required for confidential clients")
+                await expectOauthError(res, 401, "invalid_request", "Basic authentication is required for confidential clients")
             })
         })
 
@@ -240,22 +275,12 @@ describe("token endpoint", () => {
 
         it ("rejects refresh requests with missing refresh_token", async () => {
             const res = await fetchAccessToken({ grant_type: "refresh_token" })
-            expect(res.ok).to.equal(false)
-            expect(res.status).to.equal(401)
-            expect(res.headers.get("content-type")).to.match(/\bjson\b/)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_grant")
-            expect(json.error_description).to.equal("Invalid refresh token")
+            await expectOauthError(res, 401, "invalid_grant", "Invalid refresh token")
         })
 
         it ("rejects refresh requests with invalid refresh_token", async () => {
             const res = await fetchAccessToken({ grant_type: "refresh_token", refresh_token: "whatever" })
-            expect(res.ok).to.equal(false)
-            expect(res.status).to.equal(401)
-            expect(res.headers.get("content-type")).to.match(/\bjson\b/)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_grant")
-            expect(json.error_description).to.equal("Invalid refresh token")
+            await expectOauthError(res, 401, "invalid_grant", "Invalid refresh token")
         })
 
         it ("can simulate token_expired_refresh_token errors", async () => {
@@ -282,12 +307,7 @@ describe("token endpoint", () => {
                 }
             });
 
-            expect(res2.ok).to.equal(false)
-            expect(res2.status).to.equal(403)
-            expect(res2.headers.get("content-type")).to.match(/\bjson\b/)
-            const json2 = await res2.json()
-            expect(json2.error).to.equal("invalid_grant")
-            expect(json2.error_description).to.equal("Expired refresh token")
+            await expectOauthError(res2, 403, "invalid_grant", "Expired refresh token")
         })
 
         it ("can refresh using refresh_token", async () => {
@@ -466,8 +486,36 @@ describe("token endpoint", () => {
                     client_assertion: "bad-token"
                 })
 
-                expect(res.ok).to.equal(false)
-                await res.json()
+                await expectOauthError(res, 401, "invalid_request", 'Could not decode the "client_assertion" parameter')
+            })
+
+            it ("requires client.client_id if validation is on", async () => {
+                const redirect_uri = "http://localhost";
+                const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
+                const publicKey = privateKey.toJSON(false);
+                
+                // @ts-ignore
+                publicKey.key_ops = [ "verify" ]
+
+                const code = jwt.sign({
+                    redirect_uri,
+                    scope: "offline_access",
+                    validation: 1
+                }, config.jwtSecret);
+                
+                const assertion = jwt.sign({}, privateKey.toPEM(true), {
+                    algorithm: privateKey.alg as jwt.Algorithm,
+                    keyid    : privateKey.kid
+                });
+
+                const res = await fetchAccessToken({
+                    code,
+                    redirect_uri,
+                    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                    client_assertion: assertion
+                })
+
+                await expectOauthError(res, 401, "invalid_client", "The client has no client_id defined")
             })
 
             it ("throws on missing 'iss' claim", async () => {
@@ -492,10 +540,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'iss' claim")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'iss' claim")
             })
 
             it ("throws on missing 'sub' claim", async () => {
@@ -526,10 +571,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'sub' claim")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'sub' claim")
             })
 
             it ("throws on missing 'aud' claim", async () => {
@@ -561,10 +603,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'aud' claim")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'aud' claim")
             })
 
             it ("throws on missing 'exp' claim", async () => {
@@ -597,10 +636,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'exp' claim")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'exp' claim")
             })
 
             it ("throws on missing 'jti' claim", async () => {
@@ -634,10 +670,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'jti' claim")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'jti' claim")
             })
 
             it ("throws if jwtHeaders.typ !== 'JWT'", async () => {
@@ -659,10 +692,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Invalid token 'typ' header. Must be 'JWT'.")
+                await expectOauthError(res, 401, "invalid_client", "Invalid token 'typ' header. Must be 'JWT'.")
             })
 
             it ("throws on missing 'kid' header", async () => {
@@ -696,10 +726,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
     
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'kid' header")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'kid' header")
             })
 
             it ("throws on missing 'alg' header", async () => {
@@ -721,10 +748,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
     
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Missing token 'alg' header")
+                await expectOauthError(res, 401, "invalid_client", "Missing token 'alg' header")
             })
 
             it ("can simulate token_expired_registration_token", async () => {
@@ -754,10 +778,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Simulated expired token error")
+                await expectOauthError(res, 401, "invalid_client", "Simulated expired token error")
             })
 
             it ("can simulate token_invalid_jti", async () => {
@@ -787,10 +808,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Simulated invalid 'jti' value")
+                await expectOauthError(res, 401, "invalid_client", "Simulated invalid 'jti' value")
             })
 
             it ("throws if iss !== sub", async () => {
@@ -832,10 +850,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("The token sub does not match the token iss claim")
+                await expectOauthError(res, 401, "invalid_client", "The token sub does not match the token iss claim")
             })
 
             it ("validates aud", async () => {
@@ -874,10 +889,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal(`Invalid token 'aud' value (x). Must be '${LAUNCHER.baseUrl + "/v/r4/auth/token"}'.`)
+                await expectOauthError(res, 401, "invalid_client", `Invalid token 'aud' value (x). Must be '${LAUNCHER.baseUrl + "/v/r4/auth/token"}'.`)
             })
 
             it ("throws if jku is not a valid URL", async () => {
@@ -891,7 +903,10 @@ describe("token endpoint", () => {
                 const code = jwt.sign({
                     redirect_uri,
                     scope: "offline_access",
-                    jwks_url: "b"
+                    jwks_url: "b",
+                    validation: 1,
+                    client_id: "whatever",
+                    client_type: "confidential-asymmetric"
                 }, config.jwtSecret);
                 
                 const assertion = jwt.sign(
@@ -920,10 +935,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Failed to fetch JWKS from b. Only absolute URLs are supported")
+                await expectOauthError(res, 401, "invalid_client", "Failed to fetch JWKS from b. Only absolute URLs are supported")
             })
 
             it ("throws if jwks_url is not a valid URL", async () => {
@@ -937,7 +949,10 @@ describe("token endpoint", () => {
                 const code = jwt.sign({
                     redirect_uri,
                     scope: "offline_access",
-                    jwks_url: "b"
+                    jwks_url: "b",
+                    validation: 1,
+                    client_id: "whatever",
+                    client_type: "confidential-asymmetric"
                 }, config.jwtSecret);
                 
                 const assertion = jwt.sign(
@@ -962,10 +977,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Failed to fetch JWKS from b. Only absolute URLs are supported")
+                await expectOauthError(res, 401, "invalid_client", "Failed to fetch JWKS from b. Only absolute URLs are supported")
             })
 
             it ("throws if jwks string is not a valid json", async () => {
@@ -979,7 +991,11 @@ describe("token endpoint", () => {
                 const code = jwt.sign({
                     redirect_uri,
                     scope: "offline_access",
-                    jwks: "whatever"
+                    jwks: "whatever",
+                    validation: 1,
+                    client_id: "whatever",
+                    client_type: "confidential-asymmetric"
+
                 }, config.jwtSecret);
                 
                 const assertion = jwt.sign(
@@ -1004,10 +1020,7 @@ describe("token endpoint", () => {
                     client_assertion: assertion
                 })
 
-                expect(res.ok).to.equal(false)
-                const json = await res.json()
-                expect(json.error).to.equal("invalid_client")
-                expect(json.error_description).to.equal("Invalid JWKS json")
+                await expectOauthError(res, 401, "invalid_client", "Invalid JWKS json")
             })
 
             describe("Remote JWKS validation", () => {
@@ -1032,7 +1045,10 @@ describe("token endpoint", () => {
                     const code = jwt.sign({
                         redirect_uri,
                         scope: "offline_access",
-                        jwks_url: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                        jwks_url: JWKS_MOCK_SERVER.baseUrl + "/jwks",
+                        validation : 1,
+                        client_type: "confidential-asymmetric",
+                        client_id  : "whatever"
                     }, config.jwtSecret);
                     
                     const assertion = jwt.sign(
@@ -1064,93 +1080,57 @@ describe("token endpoint", () => {
 
                 it ("fails if the jwks url is not found", async () => {
                     const res = await test({ status: 404 })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`Failed to fetch JWKS from ${JWKS_MOCK_SERVER.baseUrl}/jwks. 404 Not Found`)
+                    await expectOauthError(res, 401, "invalid_client", `Failed to fetch JWKS from ${JWKS_MOCK_SERVER.baseUrl}/jwks. 404 Not Found`)
                 })
 
                 it ("fails if the jwks url does not reply with json", async () => {
                     const res = await test({ body: "test" })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.include(`Failed to fetch JWKS from ${JWKS_MOCK_SERVER.baseUrl}/jwks. invalid json response body`)
+                    await expectOauthError(res, 401, "invalid_client", /Failed to fetch JWKS from /)
                 })
 
                 it ("fails if the fetched jwks is not an object", async () => {
                     const res = await test({ body: [] })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`JWKS is not an object`)
+                    await expectOauthError(res, 401, "invalid_client", "JWKS is not an object")
                 })
 
                 it ("fails if the fetched jwks has no keys property", async () => {
                     const res = await test({ body: {} })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`JWKS does not have a "keys" property`)
+                    await expectOauthError(res, 401, "invalid_client", 'JWKS does not have a "keys" property')
                 })
 
                 it ("fails if the fetched jwks keys property is not an array", async () => {
                     const res = await test({ body: { keys: 4 } })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`jwks.keys must be an array`)
+                    await expectOauthError(res, 401, "invalid_client", 'jwks.keys must be an array')
                 })
 
                 it ("fails if the fetched jwks keys property is not an empty array", async () => {
                     const res = await test({ body: { keys: [] } })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`No usable keys found`)
+                    await expectOauthError(res, 401, "invalid_client", `No usable keys found`)
                 })
 
                 it ("fails if the none of the keys have an alg property", async () => {
                     const res = await test({ body: { keys: [ { key_ops: [] }, { key_ops: [] } ] } })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`None of the keys found in the JWKS have alg equal to ES384`)
+                    await expectOauthError(res, 401, "invalid_client", `None of the keys found in the JWKS have alg equal to ES384`)
                 })
 
                 it ("fails if the none of the keys have the needed kid", async () => {
                     const res = await test({ body: { keys: [ { key_ops: [], alg: "ES384" }, { key_ops: [] } ] } })
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`None of the keys found in the JWKS have kid equal to ${ES384_JWK.kid}`)
+                    await expectOauthError(res, 401, "invalid_client", `None of the keys found in the JWKS have kid equal to ${ES384_JWK.kid}`)
                 })
 
                 it ("fails if multiple keys match all requirements", async () => {
-                    const res = await test({ body: { keys: [
-                        { ...ES384_JWK, key_ops: [ "verify" ] },
-                        { ...ES384_JWK, key_ops: [ "verify" ] }
-                    ]}})
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.equal(`Multiple usable public keys found in the JWKS`)
+                    const res = await test({ body: { keys: [{ ...ES384_JWK, key_ops: [ "verify" ] }, { ...ES384_JWK, key_ops: [ "verify" ] }]}})
+                    await expectOauthError(res, 401, "invalid_client", `Multiple usable public keys found in the JWKS`)
                 })
 
                 it ("fails if the found key is not valid JWK", async () => {
                     const res = await test({ body: { keys: [{ key_ops: [ "verify" ], alg: "ES384", kid: ES384_JWK.kid }]}})
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_client")
-                    expect(json.error_description).to.include(`No usable public key found in the JWKS.`)
+                    await expectOauthError(res, 401, "invalid_client", /^No usable public key found in the JWKS\./)
                 })
 
                 it ("throws if jku is not whitelisted", async () => {
                     const res = await test({ body: { keys: [{ ...ES384_JWK, key_ops: [ "verify" ] }]}}, "a")
-                    expect(res.ok).to.equal(false)
-                    const json = await res.json()
-                    expect(json.error).to.equal("invalid_request")
-                    expect(json.error_description).to.equal(`Invalid jku header of the assertion token token. must be '${JWKS_MOCK_SERVER.baseUrl}/jwks'`)
+                    await expectOauthError(res, 401, "invalid_request", `Invalid jku header of the assertion token token. must be '${JWKS_MOCK_SERVER.baseUrl}/jwks'`)
                 })
             })
         })        
@@ -1191,25 +1171,13 @@ describe("token endpoint", () => {
         };
 
         it ("rejects missing sim segment", async () => {
-            const res = await fetchAccessToken({
-                grant_type: "client_credentials",
-                sim: ""
-            })
-            expect(res.status).to.equal(400)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_request")
-            expect(json.error_description).to.match(/^Invalid launch options/)
+            const res = await fetchAccessToken({ grant_type: "client_credentials", sim: ""})
+            await expectOauthError(res, 400, "invalid_request", /^Invalid launch options/)
         })
 
         it ("rejects invalid sim segment", async () => {
-            const res = await fetchAccessToken({
-                grant_type: "client_credentials",
-                sim: "x"
-            })
-            expect(res.status).to.equal(400)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_request")
-            expect(json.error_description).to.match(/^Invalid launch options/)
+            const res = await fetchAccessToken({ grant_type: "client_credentials", sim: "x"})
+            await expectOauthError(res, 400, "invalid_request", /^Invalid launch options/)
         })
 
         it ("requires scope param", async () => {
@@ -1217,10 +1185,7 @@ describe("token endpoint", () => {
                 grant_type: "client_credentials",
                 sim: { launch_type: "backend-service" }
             })
-            expect(res.status).to.equal(400)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Missing 'scope' parameter")
+            await expectOauthError(res, 400, "invalid_client", "Missing 'scope' parameter")
         })
 
         it ("requires client_assertion_type param", async () => {
@@ -1229,10 +1194,7 @@ describe("token endpoint", () => {
                 scope: "system/*.read",
                 sim: { launch_type: "backend-service" }
             })
-            expect(res.status).to.equal(400)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Missing 'client_assertion_type' parameter")
+            await expectOauthError(res, 400, "invalid_client", "Missing 'client_assertion_type' parameter")
         })
 
         it ("requires client_assertion param", async () => {
@@ -1242,10 +1204,7 @@ describe("token endpoint", () => {
                 client_assertion_type: "x",
                 sim: { launch_type: "backend-service" }
             })
-            expect(res.status).to.equal(400)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Missing 'client_assertion' parameter")
+            await expectOauthError(res, 400, "invalid_client", "Missing 'client_assertion' parameter")
         })
 
         it ("validates client_assertion_type", async () => {
@@ -1256,10 +1215,7 @@ describe("token endpoint", () => {
                 client_assertion: "x",
                 sim: { launch_type: "backend-service" }
             })
-            expect(res.status).to.equal(400)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Invalid 'client_assertion_type' parameter. Must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'.")
+            await expectOauthError(res, 400, "invalid_client", "Invalid 'client_assertion_type' parameter. Must be 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'.")
         })
 
         it ("validates client_assertion", async () => {
@@ -1270,10 +1226,7 @@ describe("token endpoint", () => {
                 client_assertion: "x",
                 sim: { launch_type: "backend-service" }
             })
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_request")
-            expect(json.error_description).to.equal('Could not decode the "client_assertion" parameter')
+            await expectOauthError(res, 401, "invalid_request", 'Could not decode the "client_assertion" parameter')
         })
 
         it ("can simulate invalid jti", async () => {
@@ -1305,10 +1258,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Simulated invalid 'jti' value")
+            await expectOauthError(res, 401, "invalid_client", "Simulated invalid 'jti' value")
         })
 
         it ("can simulate invalid token", async () => {
@@ -1348,10 +1298,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Simulated invalid token error")
+            await expectOauthError(res, 401, "invalid_client", "Simulated invalid token error")
         })
 
         it ("can simulate expired token", async () => {
@@ -1391,10 +1338,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Simulated expired token error")
+            await expectOauthError(res, 401, "invalid_client", "Simulated expired token error")
         })
 
         it ("can simulate expired token", async () => {
@@ -1434,10 +1378,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_scope")
-            expect(json.error_description).to.equal("Simulated invalid scope error")
+            await expectOauthError(res, 401, "invalid_scope", "Simulated invalid scope error")
         })
 
         it ("validates client_id", async () => {
@@ -1477,10 +1418,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Invalid 'client_id' (as sub claim of the assertion JWT)")
+            await expectOauthError(res, 401, "invalid_client", "Invalid 'client_id' (as sub claim of the assertion JWT)")
         })
 
         it ("validates scopes", async () => {
@@ -1519,10 +1457,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_scope")
-            expect(json.error_description).to.equal('Invalid scope(s) "x" requested. Only system scopes are allowed.')
+            await expectOauthError(res, 401, "invalid_scope", 'Invalid scope(s) "x" requested. Only system scopes are allowed.')
         })
 
         it ("does scope negotiation", async () => {
@@ -1562,10 +1497,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_scope")
-            expect(json.error_description).to.equal('None of the requested scope(s) could be granted.')
+            await expectOauthError(res, 401, "invalid_scope", 'No scope(s) could be granted')
         })
 
         it ("passes request_invalid_token to the access token", async () => {
@@ -1658,7 +1590,10 @@ describe("token endpoint", () => {
             
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
-                jwks_url: JWKS_MOCK_SERVER.baseUrl + "/jwks"
+                jwks_url   : JWKS_MOCK_SERVER.baseUrl + "/jwks",
+                validation : 1,
+                client_id  : "whatever",
+                scope      : "system/*.read"
             };
 
             const tokenUrl = getTokenURL({ sim });
@@ -1687,17 +1622,17 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("No usable keys found")
+            await expectOauthError(res, 401, "invalid_client", "No usable keys found")
         })
 
         it ("throws if no usable keys are found at jwks", async () => {
             
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
-                jwks: '{"keys":[]}'
+                jwks       : '{"keys":[]}',
+                validation : 1,
+                client_id  : "whatever",
+                scope      : "system/*.read"
             };
 
             const tokenUrl = getTokenURL({ sim });
@@ -1720,17 +1655,17 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("No usable keys found")
+            await expectOauthError(res, 401, "invalid_client", "No usable keys found")
         })
 
         it ("discards private keys", async () => {
             
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
-                jwks: `{"keys":[${JSON.stringify({ ...PRIVATE_KEY, key_ops: ["sign"] })}]}`
+                jwks       : `{"keys":[${JSON.stringify({ ...PRIVATE_KEY, key_ops: ["sign"] })}]}`,
+                validation : 1,
+                client_id  : "whatever",
+                scope      : "system/*.read",
             };
 
             const tokenUrl = getTokenURL({ sim });
@@ -1756,10 +1691,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("No usable public keys found in the JWKS")
+            await expectOauthError(res, 401, "invalid_client", "No usable public keys found in the JWKS")
         })
 
         it ("rejects if the assertion is signed with incorrect key", async () => {
@@ -1796,7 +1728,10 @@ describe("token endpoint", () => {
 
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
-                jwks: `{"keys":[${JSON.stringify(publicKeyJson)}]}`
+                jwks       : `{"keys":[${JSON.stringify(publicKeyJson)}]}`,
+                validation : 1,
+                client_id  : "whatever",
+                scope      : "system/*.read",
             };
 
             const tokenUrl = getTokenURL({ sim });
@@ -1824,16 +1759,16 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Invalid token. invalid signature")
+            await expectOauthError(res, 401, "invalid_client", "Invalid token. invalid signature")
         })
 
         it ("handles repeated keys", async () => {
 
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
+                validation : 1,
+                client_id  : "whatever",
+                scope      : "system/*.read",
                 jwks: JSON.stringify({
                     keys: [
                         { ...PRIVATE_KEY, key_ops: ["verify"] },
@@ -1865,12 +1800,7 @@ describe("token endpoint", () => {
                 sim
             })
 
-            expect(res.status).to.equal(401)
-            const json = await res.json()
-            // console.log(json)
-            expect(json.error).to.equal("invalid_client")
-            expect(json.error_description).to.equal("Multiple usable public keys found in the JWKS")
-
+            await expectOauthError(res, 401, "invalid_client", "Multiple usable public keys found in the JWKS")
         })
     });
 })

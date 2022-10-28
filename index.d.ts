@@ -43,6 +43,10 @@ declare namespace SMART {
         keys: JsonWebKey[]
     }
 
+    type SMARTClientType = "public" | "confidential-symmetric" | "confidential-asymmetric" | "backend-service"
+
+    type PKCEValidation = "none" | "auto" | "always"
+
     /**
      * All the possible launch parameters. Only `launch_type` is required and
      * everything else is optional.
@@ -62,6 +66,11 @@ declare namespace SMART {
         auth_error?: SimulatedError
         jwks_url?: string
         jwks?: string
+
+        // currently 0|1 as bool but could use more numbers for subtypes
+        validation?: 0 | 1
+        pkce?: PKCEValidation
+        client_type?: SMARTClientType
     }
 
     interface AuthorizeParams {
@@ -471,6 +480,11 @@ declare namespace SMART {
 
         jwks_url?: string
         jwks?: string
+
+        validation?: 0 | 1
+        pkce?: PKCEValidation
+        client_type?: SMARTClientType
+
     }
 
     interface ClientMetadata {

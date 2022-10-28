@@ -91,6 +91,19 @@ details {
     padding: 10px 0;
 }
 
+.form-control:invalid {
+    border-color: #C00;
+}
+
+.btn-group .btn:focus {
+    outline: none;
+}
+
 details + details {
     border-top: 1px dashed #CCC;
+}
+
+.form-group + .form-group {
+    border-top: 1px dashed #DDD;
+    padding-top: 1em;
 }

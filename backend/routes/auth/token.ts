@@ -1,33 +1,27 @@
-import { SMART } from "../../.."
-import crypto from "crypto"
+import crypto                from "crypto"
 import { Request, Response } from "express"
-import jwt, { JwtHeader } from "jsonwebtoken"
-import jose from "node-jose"
-import fetch from "cross-fetch"
-import config from "../../config"
-import { getRequestBaseURL, requireUrlencodedPost } from "../../lib"
-import ScopeSet from "../../../src/isomorphic/ScopeSet"
+import jwt, { JwtHeader }    from "jsonwebtoken"
+import jose                  from "node-jose"
+import fetch                 from "cross-fetch"
+import { SMART }             from "../../.."
+import config                from "../../config"
+import ScopeSet              from "../../../src/isomorphic/ScopeSet"
+import { decode }            from "../../../src/isomorphic/codec"
+import {
+    getRequestBaseURL,
+    requireUrlencodedPost
+} from "../../lib"
 import {
     InvalidClientError,
     InvalidRequestError,
     InvalidScopeError,
     OAuthError
 } from "../../errors"
-import { decode } from "../../../src/isomorphic/codec"
 
-function removeDuplicateKeys(keys: JsonWebKey[])
-{
-    return keys.reduce((prev, cur) => {
-        // @ts-ignore
-        if (!prev.find((k: any) => k.kid === cur.kid)) {
-            prev.push(cur)
-        }
-        return prev
-    }, [] as JsonWebKey[]);
-}
 
 
 export default class TokenHandler {
+
     protected request: Request;
 
     protected response: Response;
@@ -133,12 +127,9 @@ export default class TokenHandler {
         }
 
         // Basic scope negotiation
-        let grantedScopes = scope.trim().split(/\s+/)
-        if (client.scope) {
-            grantedScopes = new ScopeSet(client.scope).negotiate(scope).grantedScopes
-            if (!grantedScopes.length) {
-                throw new InvalidScopeError(`None of the requested scope(s) could be granted.`).status(401)
-            }
+        let grantedScopes = client.scope ? new ScopeSet(client.scope).negotiate(scope).grantedScopes : scope.trim().split(/\s+/);
+        if (!grantedScopes.length) {
+            throw new InvalidScopeError(`No scope(s) could be granted`).status(401)
         }
 
         const tokenResponse: SMART.AccessTokenResponse = {
@@ -161,7 +152,7 @@ export default class TokenHandler {
         }
 
         // Inject expired token error (to be thrown while requesting FHIR data)
-        else if (launchOptions.auth_error === "request_expired_token") {
+        if (launchOptions.auth_error === "request_expired_token") {
             accessToken.sim_error = "Token expired (simulated error)";
         }
 
@@ -189,7 +180,7 @@ export default class TokenHandler {
 
         // Require code param
         if (!code) {
-            throw new InvalidClientError("Missing 'code' parameter)").status(400)
+            throw new InvalidClientError("Missing 'code' parameter").status(400)
         }
 
         // Require redirect_uri param
@@ -215,7 +206,7 @@ export default class TokenHandler {
         }
 
         // If the client is using PKCE
-        if (authorizationToken.code_challenge_method) {
+        if (authorizationToken.code_challenge_method || authorizationToken.pkce === "always") {
 
             // We support only 'S256'
             if (authorizationToken.code_challenge_method !== 'S256') {
@@ -243,6 +234,7 @@ export default class TokenHandler {
             }
         }
 
+        // console.log(authorizationToken, client_assertion)
         // Validate asymmetric authorization
         if (client_assertion && client_assertion_type === "urn:ietf:params:oauth:client-assertion-type:jwt-bearer") {
             await this.validateClientAssertion(client_assertion, authorizationToken)
@@ -258,7 +250,7 @@ export default class TokenHandler {
      * of the signature on the JWT.
      */
     public async validateClientAssertion(clientAssertion: string, client: Partial<SMART.AuthorizationToken>): Promise<void> {
-
+        
         // client_assertion must be a token ------------------------------------
         try {
             var {
@@ -270,6 +262,20 @@ export default class TokenHandler {
             }
         } catch {
             throw new InvalidRequestError('Could not decode the "client_assertion" parameter').status(401)
+        }
+
+        if (client.validation === 1) {
+            if (!client.client_id) {
+                throw new InvalidClientError("The client has no client_id defined").status(401)
+            }
+
+            if (!client.scope) {
+                throw new InvalidClientError("The client has no scopes allowed").status(401)
+            }
+
+            if (!client.jwks && !client.jwks_url) {
+                throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`).status(401)
+            }
         }
 
 
@@ -330,62 +336,69 @@ export default class TokenHandler {
             ).status(401)
         }
 
+        
+
         // If neither jwks nor jwks_uri is set in "App Registration Options",
         // disable client authn checks. Just make sure a well-formed JWS is
         // present in the client assertion, and consider it "valid" if so.
         // (This is similar to how we disable client authn checks for symmetric
         // authn, if no client secret is set in app registration.)
         if (!client.jwks_url && !client.jwks) {
+            if (client.validation === 1) {
+                throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`)
+            }
             return;
         }
 
-        // Build a set of "allowed keys" as the union of all keys in jwks and
-        // all keys in jwks_uri
-        // ---------------------------------------------------------------------
-        const unionJWKS: { keys: any[] } = { keys: [] };
+        if (client.validation === 1) {
+            // Build a set of "allowed keys" as the union of all keys in jwks and
+            // all keys in jwks_uri
+            // ---------------------------------------------------------------------
+            const unionJWKS: { keys: any[] } = { keys: [] };
 
-        if (client.jwks_url) {
-            let jwks = await this.fetchJwks(client.jwks_url);
-            // jwks.keys = removeDuplicateKeys(jwks.keys);
-            this.validateJwks(jwks)
-            unionJWKS.keys.push(...jwks.keys)
-        }
-
-        if (client.jwks) {
-            let jwks;
-            if (typeof client.jwks === "string") {
-                try {
-                    jwks = JSON.parse(client.jwks)
-                } catch {
-                    throw new InvalidClientError("Invalid JWKS json").status(401)
-                }
-            } else {
-                jwks = client.jwks
+            if (client.jwks_url) {
+                let jwks = await this.fetchJwks(client.jwks_url);
+                // jwks.keys = removeDuplicateKeys(jwks.keys);
+                this.validateJwks(jwks)
+                unionJWKS.keys.push(...jwks.keys)
             }
-            // jwks.keys = removeDuplicateKeys(jwks.keys);
-            this.validateJwks(jwks)
-            unionJWKS.keys.push(...jwks.keys)
-        }
 
-        // Check whether the JWS is valid and signed with one of the allowed keys
-        // ---------------------------------------------------------------------
-        const key = await this.pickPublicKey(unionJWKS.keys, jwtHeaders.kid, jwtHeaders.alg)
+            if (client.jwks) {
+                let jwks;
+                if (typeof client.jwks === "string") {
+                    try {
+                        jwks = JSON.parse(client.jwks)
+                    } catch {
+                        throw new InvalidClientError("Invalid JWKS json").status(401)
+                    }
+                } else {
+                    jwks = client.jwks
+                }
+                // jwks.keys = removeDuplicateKeys(jwks.keys);
+                this.validateJwks(jwks)
+                unionJWKS.keys.push(...jwks.keys)
+            }
 
-        try {
-            jwt.verify(clientAssertion, key.toPEM(), { algorithms: config.supportedAlgorithms as jwt.Algorithm[] });
-        } catch (ex) {
-            throw new InvalidClientError("Invalid token. %s", (ex as Error).message).status(401)
-        }
+            // Check whether the JWS is valid and signed with one of the allowed keys
+            // ---------------------------------------------------------------------
+            const key = await this.pickPublicKey(unionJWKS.keys, jwtHeaders.kid, jwtHeaders.alg)
 
-        // If jku is present as a JWS header, check that an identical jwks_uri
-        // was included in "App Registration" options, because
-        // https://hl7.org/fhir/smart-app-launch/client-confidential-asymmetric.html
-        // says: "When present, this SHALL match the JWKS URL value that the
-        // client supplied to the FHIR authorization server at client registration
-        // time."
-        // ---------------------------------------------------------------------
-        if (jwtHeaders.jku && jwtHeaders.jku !== client.jwks_url) {
-            throw new InvalidRequestError("Invalid jku header of the assertion token token. must be '%s'", client.jwks_url).status(401)
+            try {
+                jwt.verify(clientAssertion, key.toPEM(), { algorithms: config.supportedAlgorithms as jwt.Algorithm[] });
+            } catch (ex) {
+                throw new InvalidClientError("Invalid token. %s", (ex as Error).message).status(401)
+            }
+
+            // If jku is present as a JWS header, check that an identical jwks_uri
+            // was included in "App Registration" options, because
+            // https://hl7.org/fhir/smart-app-launch/client-confidential-asymmetric.html
+            // says: "When present, this SHALL match the JWKS URL value that the
+            // client supplied to the FHIR authorization server at client registration
+            // time."
+            // ---------------------------------------------------------------------
+            if (jwtHeaders.jku && jwtHeaders.jku !== client.jwks_url) {
+                throw new InvalidRequestError("Invalid jku header of the assertion token token. must be '%s'", client.jwks_url).status(401)
+            }
         }
     }
 
@@ -492,20 +505,32 @@ export default class TokenHandler {
     }
 
     public validateBasicAuth(authorizationToken: SMART.AuthorizationToken): void {
+
         // Simulate invalid client secret error
         if (authorizationToken.auth_error === "auth_invalid_client_secret") {
             throw new InvalidClientError("Simulated invalid client secret error").status(401)
         }
 
         const secret = authorizationToken.client_secret
-        const authHeader = this.request.headers.authorization;
+        const authHeader = String(this.request.headers.authorization || "").trim();
+
+        if (!secret) {
+            if (authorizationToken.validation) {
+                throw new InvalidClientError("The client has no client_secret defined").status(401)
+            }
+            return
+        }
 
         if (!authHeader || authHeader.search(/^basic\s*/i) !== 0) {
-            if (secret) {
-                throw new InvalidRequestError("Basic authentication is required for confidential clients").status(401)
-            }
-            return;
+            throw new InvalidRequestError("Basic authentication is required for confidential clients").status(401)
         }
+
+        // if (!authHeader || authHeader.search(/^basic\s*/i) !== 0) {
+        //     if (secret) {
+        //         throw new InvalidRequestError("Basic authentication is required for confidential clients").status(401)
+        //     }
+        //     return;
+        // }
 
         let auth: string | string[] = authHeader.replace(/^basic\s*/i, "")
 
@@ -581,11 +606,11 @@ export default class TokenHandler {
      */
     public finish(authorizationToken: SMART.AuthorizationToken) {
 
-        const req = this.request;
         const res = this.response;
 
-        // Request from confidential client
-        this.validateBasicAuth(authorizationToken)
+        if (authorizationToken.client_type === "confidential-symmetric") {
+            this.validateBasicAuth(authorizationToken)
+        }
 
         if (authorizationToken.auth_error === "token_invalid_token") {
             throw new InvalidClientError("Simulated invalid client error").status(401)

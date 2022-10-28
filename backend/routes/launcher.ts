@@ -49,7 +49,10 @@ export default (req: Request, res: Response) => {
         patient    : patient  + "",
         provider   : provider + "",
         auth_error : auth_error as SMART.SimulatedError,
-        encounter  : bool(select_encounter) ? "MANUAL" : "AUTO"
+        encounter  : bool(select_encounter) ? "MANUAL" : "AUTO",
+        validation : 0,
+        pkce       : "auto",
+        client_type: "public",
     })
 
     url.searchParams.set("launch", launchOptions.toString())

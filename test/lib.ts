@@ -16,7 +16,7 @@ interface AuthorizeParams {
 }
 
 interface LaunchOptions extends AuthorizeParams {
-    launchParams   : SMART.LaunchParams
+    launchParams   : Partial<SMART.LaunchParams>
     ignoreErrors  ?: boolean
     requestOptions?: RequestInit
     fhirVersion   ?: string
@@ -39,10 +39,18 @@ export function launch({
 {
     const searchParams = new URLSearchParams(query)
 
-    const launch = encode(launchParams, ignoreErrors)
+    const launchOptions: SMART.LaunchParams = {
+        validation : 0,
+        pkce       : "auto",
+        client_type: "public",
+        launch_type: "provider-ehr",
+        ...launchParams
+    }
+
+    const launch = encode(launchOptions, ignoreErrors)
 
     // In standalone launch the launch params are in URL segment
-    if (launchParams.launch_type === "patient-standalone" || launchParams.launch_type === "provider-standalone") {
+    if (launchOptions.launch_type === "patient-standalone" || launchOptions.launch_type === "provider-standalone") {
         var url = new URL(`/v/${fhirVersion}/sim/${launch}/auth/authorize`, LAUNCHER.baseUrl)
         if ("aud" in query && query.aud === undefined) {
             searchParams.delete("aud")
@@ -54,7 +62,7 @@ export function launch({
     // In EHR launch the launch params are in launch query parameter
     else {
         var url = new URL(`/v/${fhirVersion}/auth/authorize`, LAUNCHER.baseUrl)
-        searchParams.set("launch", encode(launchParams, ignoreErrors))
+        searchParams.set("launch", encode(launchOptions, ignoreErrors))
         if ("aud" in query && query.aud === undefined) {
             searchParams.delete("aud")
         } else {
@@ -216,4 +224,51 @@ export function createClientAssertion({
             }
         }
     );
+}
+
+export async function expectOauthError(
+    res: Response,
+    status: number,
+    type: "invalid_request" |
+          "invalid_client" |
+          "invalid_grant" |
+          "unauthorized_client" |
+          "unsupported_grant_type" |
+          "invalid_scope",
+    message?: string | RegExp
+) {
+    const text = await res.text()
+    
+    expect(res.status).to.equal(status, "Unexpected response status")
+    // console.log(text)
+
+    if ([301, 302, 303, 307, 308].includes(status)) {
+        const loc = res.headers.get("location")
+        expect(loc).to.exist
+        expect(loc).to.not.be.empty
+        const url = new URL(loc!)
+        expect(url.searchParams.get("error")).to.equal(type)
+        if (message) {
+            if (typeof message === "string") {
+                expect(url.searchParams.get("error_description")).to.equal(message)
+            }
+            else {
+                expect(url.searchParams.get("error_description")).to.match(message)
+            }
+        }
+    }
+    else {
+        expect(res.headers.get("content-type")).to.match(/\bjson\b/, "Expected JSON error response")
+        expect(res.ok).to.equal(false, "The request should have failed")
+        const json = JSON.parse(text)
+        expect(json.error).to.equal(type)
+        if (message) {
+            if (typeof message === "string") {
+                expect(json.error_description).to.equal(message)
+            }
+            else {
+                expect(json.error_description).to.match(message)
+            }
+        }
+    }
 }

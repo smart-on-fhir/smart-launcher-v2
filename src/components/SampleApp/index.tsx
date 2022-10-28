@@ -6,7 +6,7 @@ import ServerInfo              from "./ServerInfo"
 import { TokenResponse }       from "./TokenResponse"
 import IDToken                 from "./IDToken"
 import SMARTInfo               from "./SMARTInfo"
-import ClientInfo              from "./Client"
+// import ClientInfo              from "./Client"
 import RefreshToken            from "./RefreshToken"
 import LaunchPanel             from "./LaunchPanel"
 import Patient                 from "./Patient"
@@ -150,6 +150,16 @@ export default function SampleApp()
 
     return (
         <div className="flex-row content sample-app" style={{ flex: "1 1 0px" }}>
+            { client.state.clientPublicKeySetUrl && (
+                <p className="alert alert-warning" style={{ flex: "1 1 100%" }}>
+                    <i className="glyphicon glyphicon-info-sign" /> This
+                    app can be authorized using the public keys found
+                    at <a href={client.state.clientPublicKeySetUrl} target="_blank" rel="noreferrer noopener">
+                        {client.state.clientPublicKeySetUrl}
+                    </a>
+                </p>
+            )}
+            
             { launchParams.launch_type && launchParams.launch_type.includes("standalone") && (
                 <div className="panel" style={{ flex: "1 1 100%" }}>
                     <LaunchPanel
@@ -162,7 +172,7 @@ export default function SampleApp()
             )}
             <ServerInfo    client={client} />
             <SMARTInfo     client={client} />
-            <ClientInfo    params={launchParams} />
+            {/* <ClientInfo    params={launchParams} /> */}
             <TokenResponse client={client} />
             <IDToken       client={client} />
             <RefreshToken  client={client} />

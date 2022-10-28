@@ -12,8 +12,10 @@ export interface LauncherQuery {
     launch       : string
     
     // client validation method 
-    cvm: string
+    // cvm: string
+    // ct: string
     jwks_tab: string
+    // pkce: string
     // [key: string]: string | undefined
 }
 
@@ -21,9 +23,11 @@ const LauncherQueryDefaults: LauncherQuery = {
     fhir_version: "r4",
     launch_url  : "",
     tab         : "0",
-    launch      : encode({ launch_type: "provider-ehr" }),
-    cvm         : "client-public",
-    jwks_tab    : "0"
+    launch      : encode({ launch_type: "provider-ehr", validation: 0, client_type: "public", pkce: "auto" }),
+    // cvm         : "loose",
+    jwks_tab    : "0",
+    // ct          : "public",
+    // pkce        : "auto"
 }
 
 /**

@@ -311,7 +311,13 @@ export default class AuthorizeHandler {
             client_id   : params.client_id,
             redirect_uri: params.redirect_uri + "",
             scope       : params.scope,
+
             // sde         : sim.sde,
+
+            // Pass these three to the token endpoint via the client_id token
+            validation  : launchOptions.validation,
+            pkce        : launchOptions.pkce,
+            client_type : launchOptions.client_type
         };
 
         // Add client_secret to the client token (to be used later)
@@ -384,7 +390,7 @@ export default class AuthorizeHandler {
 
     public validateAuthorizeRequest(): void
     {
-        const { params, request } = this
+        const { params, request, launchOptions } = this
 
         // User decided not to authorize the app launch
         if (params.auth_success === "0") {
@@ -430,14 +436,17 @@ export default class AuthorizeHandler {
             throw new InvalidRequestError('Bad audience value "%s". Expected "%s".', params.aud, apiUrlHref)
         }
 
-        // code_challenge_method must be 'S256' if set
-        if (params.code_challenge_method && params.code_challenge_method !== 'S256') {
-            throw new InvalidRequestError("Invalid code_challenge_method. Must be S256.")
-        }
+        if (launchOptions.pkce !== "none") {
 
-        // code_challenge required if code_challenge_method is set
-        if (params.code_challenge_method && !params.code_challenge) {
-            throw new InvalidRequestError("Missing code_challenge parameter")
+            // code_challenge_method must be 'S256' if set
+            if ((params.code_challenge_method || launchOptions.pkce === "always") && params.code_challenge_method !== 'S256') {
+                throw new InvalidRequestError("Invalid code_challenge_method. Must be S256.")
+            }
+
+            // code_challenge required if code_challenge_method is set
+            if ((params.code_challenge_method || launchOptions.pkce === "always") && !params.code_challenge) {
+                throw new InvalidRequestError("Missing code_challenge parameter")
+            }
         }
     }
 
@@ -476,6 +485,29 @@ export default class AuthorizeHandler {
         if (params.auth_success ) launchOptions.skip_auth  = true;
         if (params.login_success) launchOptions.skip_login = true;
         // if (authorizeParams.aud_validated) launchOptions.aud_validated = true;
+
+        // console.log(launchOptions)
+        if (launchOptions.validation) {
+            if (!launchOptions.client_id) {
+                throw new InvalidClientError("The client has no client_id defined")
+            }
+
+            if (!launchOptions.scope) {
+                throw new InvalidClientError("The client has no scopes allowed")
+            }
+
+            if (!launchOptions.redirect_uris) {
+                throw new InvalidClientError(`The client has no redirect uris allowed`)
+            }
+
+            if (launchOptions.client_type === "confidential-symmetric" && !launchOptions.client_secret) {
+                throw new InvalidClientError(`The client has no client secret defined`)
+            }
+            
+            if (launchOptions.client_type === "confidential-asymmetric" && !(launchOptions.jwks || launchOptions.jwks_url)) {
+                throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`)
+            }
+        }
 
 
         // Simulate auth_invalid_client_id error if requested

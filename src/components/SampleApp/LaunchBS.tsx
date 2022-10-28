@@ -384,7 +384,7 @@ export default function LaunchBS() {
 
     const sim = audParam.match(/\/sim\/(.*?)\/fhir/)?.[1]
 
-    const client = decode(sim || encode({ launch_type: "backend-service" }))
+    const client = decode(sim || encode({ launch_type: "backend-service", validation: 0, client_type: "backend-service", pkce: "none" }))
 
     const [state, dispatch] = useReducer<Reducer<State, Partial<State>>>(
         reducer,
@@ -414,6 +414,15 @@ export default function LaunchBS() {
         <div className="container">
             <h3>SMART Backend Service <span className="text-muted">Sample App</span></h3>
             <hr/>
+            { !client.jwks && !client.jwks_url && (
+                <p className="alert alert-warning" style={{ flex: "1 1 100%" }}>
+                    <i className="glyphicon glyphicon-info-sign" /> This
+                    app can be authorized using the public keys found
+                    at <a href="https://www.hl7.org/fhir/smart-app-launch/RS384.public.json" target="_blank" rel="noreferrer noopener">
+                        https://www.hl7.org/fhir/smart-app-launch/RS384.public.json
+                    </a>
+                </p>
+            )}
             <WellKnownConfig state={state} dispatch={dispatch} />
             <LaunchForm state={state} dispatch={dispatch} />
             { state.tokenEndpoint && <CreateAssertion state={state} dispatch={dispatch} /> }
