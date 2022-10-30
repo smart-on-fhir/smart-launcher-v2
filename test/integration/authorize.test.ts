@@ -633,6 +633,29 @@ FHIR_VERSIONS.forEach(([fhirVersion]) => {
                     expect(parseResponseCode(redirectUrl.searchParams.get("code") || "").context.encounter).to.equal('e')
                 });
 
+                it ("passes nonce through to the auth code", async () => {
+                    const res = await launch({
+                        launchParams: {
+                            launch_type: "provider-ehr",
+                            provider: "p",
+                            skip_auth: true
+                        },
+                        scope         : "openid fhirUser",
+                        login_success : true,
+                        redirect_uri  : "http://localhost",
+                        response_type : "code",
+                        requestOptions: { method },
+                        nonce: "test-nonce",
+                        fhirVersion
+                    });
+
+                    expect(res.ok).to.equal(false)
+                    expect(res.status).to.equal(302)
+                    const redirectUrl = new URL(res.headers.get("location") || "")
+                    const code = parseResponseCode(redirectUrl.searchParams.get("code") || "")
+                    expect(code.nonce).to.equal("test-nonce")
+                })
+
                 /**
                  * Verify that the selected user is added to the code token
                  */

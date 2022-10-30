@@ -316,6 +316,21 @@ describe("token endpoint", () => {
             expect(json2).to.haveOwnProperty("refresh_token").and.to.be.a("string")
         })
 
+        it ("passes nonce to the access token", async () => {
+            const code = jwt.sign({
+                redirect_uri: "http://whatever",
+                scope: "openid profile",
+                user: "user-id",
+                nonce: "test-nonce"
+            }, config.jwtSecret, { expiresIn: "5m" })
+            const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
+            expect(res.status).to.equal(200)
+            const json = await res.json()
+            expect(json).to.haveOwnProperty("id_token")
+            const token = jwt.decode(json.id_token)
+            expect(token).to.haveOwnProperty("nonce").that.equals("test-nonce")
+        })
+
         describe("Asymmetric authentication", () => {
 
             const ES384_JWK = {

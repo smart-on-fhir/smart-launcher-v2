@@ -26,6 +26,7 @@ export interface AuthorizeParams {
     scope: string
     state: string
     aud: string
+    nonce?: string
 
     code_challenge_method?: "S256"
     code_challenge?: string
@@ -316,7 +317,8 @@ export default class AuthorizeHandler {
 
             // Pass these to the token endpoint via the client_id token
             pkce: launchOptions.pkce,
-            client_type : launchOptions.client_type
+            client_type : launchOptions.client_type,
+            nonce: params.nonce
         };
 
         // Add client_secret to the client token (to be used later)
@@ -377,12 +379,6 @@ export default class AuthorizeHandler {
                 }
             }
         }
-
-        // Add nonce, if provided, so it can be reflected back in the subsequent
-        // token request.
-        // if (nonce) {
-        //     code.nonce = nonce;
-        // }
 
         return jwt.sign(code, config.jwtSecret, { expiresIn: "5m" });
     }

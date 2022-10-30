@@ -559,15 +559,11 @@ export default class TokenHandler {
             fhirUser: clientDetailsToken.user,
             aud: clientDetailsToken.client_id,
             sub: crypto.createHash('sha256').update(clientDetailsToken.user!).digest('hex'),
-            iss
-        };
+            iss,
 
-        // // Reflect back the nonce if it was provided in the original Authentication
-        // // Request.
-        // let { nonce } = clientDetailsToken;
-        // if (nonce) {
-        //     payload.nonce = nonce;
-        // }
+            // Reflect back the nonce if it was provided in the original Authentication Request
+            nonce: clientDetailsToken.nonce
+        };
 
         return jwt.sign(payload, config.privateKeyAsPem, {
             algorithm: "RS256",
