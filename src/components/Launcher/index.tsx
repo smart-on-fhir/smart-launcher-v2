@@ -494,7 +494,7 @@ function ValidationTab() {
 
     const jwksTextarea = useRef<HTMLTextAreaElement>(null)
 
-    const validation = query.val || "0"
+    const validation = query.validation || "0"
 
     let jwksError = ""
     try {
@@ -517,8 +517,8 @@ function ValidationTab() {
         }
     }, [jwksError])
 
-    function setValidation(val: "0" | "1") {
-        if (val === "1") {
+    function setValidation(validation: "0" | "1") {
+        if (validation === "1") {
             setQuery({
                 client_id: clientID,
                 scope,
@@ -526,7 +526,7 @@ function ValidationTab() {
                 jwks_url,
                 client_secret,
                 redirect_uris,
-                val
+                validation
             })
             setStateClientId("")
             setScope("")
@@ -548,7 +548,7 @@ function ValidationTab() {
                 jwks_url: "",
                 client_secret: "",
                 redirect_uris: "",
-                val
+                validation
             })
         }
     }
@@ -622,7 +622,7 @@ function ValidationTab() {
                         </div>
                     </div>
                 </div>
-                { query.val === "1" && (
+                { query.validation === "1" && (
                     <div className="text-muted small">
                         { launch.pkce === "none" && <span>Do not require or validate PKCE</span> }
                         { launch.pkce === "auto" && <span>Require PKCE if <code>code_challenge_method</code> parameter is sent</span> }

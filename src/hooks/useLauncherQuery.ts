@@ -6,18 +6,12 @@ import { decode, encode }  from "../isomorphic/codec"
 interface LauncherState extends Omit<Partial<LauncherQuery>, "launch">, SMART.LaunchParams {}
 
 export interface LauncherQuery {
-    launch_url   : string
-    fhir_version : string
-    tab          : string
-    launch       : string
-    
-    // client validation method 
-    // cvm: string
-    // ct: string
-    jwks_tab: string
-    val    ?: string
-    // pkce: string
-    // [key: string]: string | undefined
+    launch_url  : string
+    fhir_version: string
+    tab         : string
+    launch      : string
+    jwks_tab    : string
+    validation ?: string
 }
 
 const LauncherQueryDefaults: LauncherQuery = {
@@ -25,11 +19,8 @@ const LauncherQueryDefaults: LauncherQuery = {
     launch_url  : "",
     tab         : "0",
     launch      : encode({ launch_type: "provider-ehr", client_type: "public", pkce: "auto" }),
-    // cvm         : "loose",
     jwks_tab    : "0",
-    val         : "0"
-    // ct          : "public",
-    // pkce        : "auto"
+    validation  : "0"
 }
 
 /**
