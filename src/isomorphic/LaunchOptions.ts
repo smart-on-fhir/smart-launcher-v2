@@ -62,8 +62,6 @@ export default class LaunchOptions
 
     jwks?: string;
 
-    validation: 0 | 1;
-
     client_type: SMART.SMARTClientType;
 
     pkce: SMART.PKCEValidation;
@@ -87,7 +85,6 @@ export default class LaunchOptions
         this.client_id     = input.client_id     || ""
         this.jwks_url      = input.jwks_url      || ""
         this.jwks          = input.jwks          || ""
-        this.validation    = input.validation    || 0
         this.client_type   = input.client_type   || "public"
         this.pkce          = input.pkce          || "auto"
         this.provider.set(input.provider || "");
@@ -116,7 +113,6 @@ export default class LaunchOptions
             auth_error   : this.auth_error,
             jwks_url     : this.jwks_url,
             jwks         : this.jwks,
-            validation   : this.validation,
             client_type  : this.client_type,
             pkce         : this.pkce
         }

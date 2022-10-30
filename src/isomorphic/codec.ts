@@ -63,9 +63,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
             params.auth_error    || "",
             params.jwks_url      || "",
             params.jwks          || "",
-            params.validation    || 0,
-            3, // client_type = backend-service
-            0, // pkce = none
+            clientTypes.indexOf(params.client_type || "public"),
+            PKCEValidationTypes.indexOf(params.pkce || "auto")
         ]))
     }
 
@@ -84,7 +83,6 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         params.auth_error    || "",
         params.jwks_url      || "",
         params.jwks          || "",
-        params.validation    || 0,
         clientTypes.indexOf(params.client_type || "public"),
         PKCEValidationTypes.indexOf(params.pkce || "auto")
     ];
@@ -119,9 +117,8 @@ export function decode(launch: string): SMART.LaunchParams {
         auth_error   : arr[11] || "",
         jwks_url     : arr[12] || "",
         jwks         : arr[13] || "",
-        validation   : arr[14] || 0,
-        client_type  : clientTypes[arr[15]],
-        pkce         : PKCEValidationTypes[arr[16]]
+        client_type  : clientTypes[arr[14]],
+        pkce         : PKCEValidationTypes[arr[15]]
     }
 }
 

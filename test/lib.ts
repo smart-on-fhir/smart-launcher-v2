@@ -40,7 +40,6 @@ export function launch({
     const searchParams = new URLSearchParams(query)
 
     const launchOptions: SMART.LaunchParams = {
-        validation : 0,
         pkce       : "auto",
         client_type: "public",
         launch_type: "provider-ehr",

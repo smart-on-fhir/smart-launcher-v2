@@ -1,11 +1,20 @@
-import { SMART } from "../../.."
-import jwt           from "jsonwebtoken"
-import LaunchOptions from "../../../src/isomorphic/LaunchOptions"
-import ScopeSet      from "../../../src/isomorphic/ScopeSet"
-import config        from "../../config"
-import { getRequestBaseURL, humanizeArray, requireUrlencodedPost } from "../../lib"
+import jwt                   from "jsonwebtoken"
 import { Request, Response } from "express"
-import { InvalidClientError, InvalidRequestError, InvalidScopeError, OAuthError } from "../../errors"
+import { SMART }             from "../../.."
+import LaunchOptions         from "../../../src/isomorphic/LaunchOptions"
+import ScopeSet              from "../../../src/isomorphic/ScopeSet"
+import config                from "../../config"
+import {
+    getRequestBaseURL,
+    humanizeArray,
+    requireUrlencodedPost
+} from "../../lib"
+import {
+    InvalidClientError,
+    InvalidRequestError,
+    InvalidScopeError,
+    OAuthError
+} from "../../errors"
 
 
 export interface AuthorizeParams {
@@ -27,7 +36,6 @@ export interface AuthorizeParams {
     encounter?: string
     auth_success?: "0" | "1"
     login_success?: string
-    // aud_validated?: string
 }
 
 
@@ -45,8 +53,7 @@ export default class AuthorizeHandler {
 
     protected scope: ScopeSet;
 
-    public static handle(req: Request, res: Response)
-    {
+    public static handle(req: Request, res: Response) {
         if (req.method === "POST") {
             requireUrlencodedPost(req)
         }
@@ -66,12 +73,6 @@ export default class AuthorizeHandler {
                 const instance = new AuthorizeHandler(req, res, params, launchOptions)
                 return instance.authorize();
 
-            // requesting an access token (implicit grant)
-            // case "token":
-            //     throw new OAuthError('Invalid Authorization Grant "%s"', params.response_type)
-            //         .errorId("unsupported_grant_type")
-            //         .status(400);
-
             // missing response_type
             case void 0:
                 throw new OAuthError('Missing response_type parameter')
@@ -86,8 +87,7 @@ export default class AuthorizeHandler {
         }
     }
 
-    public constructor(req: Request, res: Response, params: AuthorizeParams, launchOptions: LaunchOptions)
-    {
+    public constructor(req: Request, res: Response, params: AuthorizeParams, launchOptions: LaunchOptions) {
         this.request       = req as unknown as SMART.AuthorizeRequest
         this.response      = res
         this.params        = params
@@ -308,15 +308,14 @@ export default class AuthorizeHandler {
                 need_patient_banner: !launchOptions.sim_ehr,
                 smart_style_url: this.baseUrl + "/smart-style.json",
             },
-            client_id   : params.client_id,
+            client_id: params.client_id,
             redirect_uri: params.redirect_uri + "",
-            scope       : params.scope,
+            scope: params.scope,
 
-            // sde         : sim.sde,
+            // sde: sim.sde,
 
-            // Pass these three to the token endpoint via the client_id token
-            validation  : launchOptions.validation,
-            pkce        : launchOptions.pkce,
+            // Pass these to the token endpoint via the client_id token
+            pkce: launchOptions.pkce,
             client_type : launchOptions.client_type
         };
 
@@ -328,7 +327,7 @@ export default class AuthorizeHandler {
         // code_challenge_method and code_challenge
         if (params.code_challenge_method) {
             code.code_challenge_method = params.code_challenge_method
-            code.code_challenge        = params.code_challenge
+            code.code_challenge = params.code_challenge
         }
 
         // jwks_url
@@ -484,31 +483,6 @@ export default class AuthorizeHandler {
         if (params.encounter    ) launchOptions.encounter  = params.encounter;
         if (params.auth_success ) launchOptions.skip_auth  = true;
         if (params.login_success) launchOptions.skip_login = true;
-        // if (authorizeParams.aud_validated) launchOptions.aud_validated = true;
-
-        // console.log(launchOptions)
-        if (launchOptions.validation) {
-            if (!launchOptions.client_id) {
-                throw new InvalidClientError("The client has no client_id defined")
-            }
-
-            if (!launchOptions.scope) {
-                throw new InvalidClientError("The client has no scopes allowed")
-            }
-
-            if (!launchOptions.redirect_uris) {
-                throw new InvalidClientError(`The client has no redirect uris allowed`)
-            }
-
-            if (launchOptions.client_type === "confidential-symmetric" && !launchOptions.client_secret) {
-                throw new InvalidClientError(`The client has no client secret defined`)
-            }
-            
-            if (launchOptions.client_type === "confidential-asymmetric" && !(launchOptions.jwks || launchOptions.jwks_url)) {
-                throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`)
-            }
-        }
-
 
         // Simulate auth_invalid_client_id error if requested
         if (launchOptions.auth_error == "auth_invalid_client_id") {

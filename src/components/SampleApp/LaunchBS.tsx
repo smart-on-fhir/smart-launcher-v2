@@ -384,7 +384,7 @@ export default function LaunchBS() {
 
     const sim = audParam.match(/\/sim\/(.*?)\/fhir/)?.[1]
 
-    const client = decode(sim || encode({ launch_type: "backend-service", validation: 0, client_type: "backend-service", pkce: "none" }))
+    const client = decode(sim || encode({ launch_type: "backend-service", client_type: "backend-service", pkce: "none" }))
 
     const [state, dispatch] = useReducer<Reducer<State, Partial<State>>>(
         reducer,

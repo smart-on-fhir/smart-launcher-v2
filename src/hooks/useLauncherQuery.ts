@@ -1,4 +1,4 @@
-import { SMART } from "../../"
+import { SMART }           from "../../"
 import { useSearchParams } from "react-router-dom"
 import { decode, encode }  from "../isomorphic/codec"
 
@@ -15,6 +15,7 @@ export interface LauncherQuery {
     // cvm: string
     // ct: string
     jwks_tab: string
+    val    ?: string
     // pkce: string
     // [key: string]: string | undefined
 }
@@ -23,9 +24,10 @@ const LauncherQueryDefaults: LauncherQuery = {
     fhir_version: "r4",
     launch_url  : "",
     tab         : "0",
-    launch      : encode({ launch_type: "provider-ehr", validation: 0, client_type: "public", pkce: "auto" }),
+    launch      : encode({ launch_type: "provider-ehr", client_type: "public", pkce: "auto" }),
     // cvm         : "loose",
     jwks_tab    : "0",
+    val         : "0"
     // ct          : "public",
     // pkce        : "auto"
 }

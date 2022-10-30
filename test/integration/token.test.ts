@@ -139,37 +139,16 @@ describe("token endpoint", () => {
                 const code = jwt.sign({
                     redirect_uri: "http://whatever",
                     auth_error: "auth_invalid_client_secret",
-                    validation: 1,
                     client_type: "confidential-symmetric"
                 }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
                 await expectOauthError(res, 401, "invalid_client", "Simulated invalid client secret error")
             })
 
-            it ("Rejects strict clients without secret", async () => {
-                const code = jwt.sign({
-                    redirect_uri: "http://whatever",
-                    validation: 1,
-                    client_type: "confidential-symmetric"
-                }, config.jwtSecret, { expiresIn: "5m" })
-                const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
-                await expectOauthError(res, 401, "invalid_client", "The client has no client_secret defined")
-            })
-
-            it ("Ignores validation is needed", async () => {
-                const code = jwt.sign({
-                    redirect_uri: "http://whatever",
-                    validation: 0,
-                    client_type: "confidential-symmetric"
-                }, config.jwtSecret, { expiresIn: "5m" })
-                const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic" }}})
-                expect(res.status).to.equal(200)
-            })
 
             it ("Rejects empty authorization header", async () => {
                 const code = jwt.sign({
                     redirect_uri: "http://whatever",
-                    validation: 1,
                     client_type: "confidential-symmetric",
                     client_secret: "test-secret"
                 }, config.jwtSecret, { expiresIn: "5m" })
@@ -180,7 +159,6 @@ describe("token endpoint", () => {
             it ("Parses the authorization header", async () => {
                 const code = jwt.sign({
                     redirect_uri: "http://whatever",
-                    validation: 1,
                     client_type: "confidential-symmetric",
                     client_secret: "test-secret"
                 }, config.jwtSecret, { expiresIn: "5m" })
@@ -192,7 +170,6 @@ describe("token endpoint", () => {
                 const code = jwt.sign({
                     redirect_uri: "http://whatever",
                     client_id: "whatever",
-                    validation: 1,
                     client_type: "confidential-symmetric",
                     client_secret: "test-secret"
                 }, config.jwtSecret, { expiresIn: "5m" })
@@ -213,19 +190,17 @@ describe("token endpoint", () => {
                     redirect_uri: "http://whatever",
                     client_id: "whatever",
                     client_secret: "secret",
-                    validation: 1,
                     client_type: "confidential-symmetric"
                 }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever", requestOptions: { headers: { authorization: "Basic " + Buffer.from("whatever:pass").toString("base64") }}})
                 await expectOauthError(res, 401, "invalid_client", "Invalid client_secret in the basic auth header")
             })
 
-            it ("Requires auth is client_secret is set in registration options", async () => {
+            it ("Requires that client_secret is set in registration options", async () => {
                 const code = jwt.sign({
                     redirect_uri: "http://whatever",
                     client_id: "whatever",
                     client_secret: "secret",
-                    validation: 1,
                     client_type: "confidential-symmetric"
                 }, config.jwtSecret, { expiresIn: "5m" })
                 const res = await fetchAccessToken({ code, redirect_uri: "http://whatever" })
@@ -487,35 +462,6 @@ describe("token endpoint", () => {
                 })
 
                 await expectOauthError(res, 401, "invalid_request", 'Could not decode the "client_assertion" parameter')
-            })
-
-            it ("requires client.client_id if validation is on", async () => {
-                const redirect_uri = "http://localhost";
-                const privateKey = await jose.JWK.asKey(ES384_JWK, "json");
-                const publicKey = privateKey.toJSON(false);
-                
-                // @ts-ignore
-                publicKey.key_ops = [ "verify" ]
-
-                const code = jwt.sign({
-                    redirect_uri,
-                    scope: "offline_access",
-                    validation: 1
-                }, config.jwtSecret);
-                
-                const assertion = jwt.sign({}, privateKey.toPEM(true), {
-                    algorithm: privateKey.alg as jwt.Algorithm,
-                    keyid    : privateKey.kid
-                });
-
-                const res = await fetchAccessToken({
-                    code,
-                    redirect_uri,
-                    client_assertion_type: "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
-                    client_assertion: assertion
-                })
-
-                await expectOauthError(res, 401, "invalid_client", "The client has no client_id defined")
             })
 
             it ("throws on missing 'iss' claim", async () => {
@@ -904,7 +850,6 @@ describe("token endpoint", () => {
                     redirect_uri,
                     scope: "offline_access",
                     jwks_url: "b",
-                    validation: 1,
                     client_id: "whatever",
                     client_type: "confidential-asymmetric"
                 }, config.jwtSecret);
@@ -950,7 +895,6 @@ describe("token endpoint", () => {
                     redirect_uri,
                     scope: "offline_access",
                     jwks_url: "b",
-                    validation: 1,
                     client_id: "whatever",
                     client_type: "confidential-asymmetric"
                 }, config.jwtSecret);
@@ -992,7 +936,6 @@ describe("token endpoint", () => {
                     redirect_uri,
                     scope: "offline_access",
                     jwks: "whatever",
-                    validation: 1,
                     client_id: "whatever",
                     client_type: "confidential-asymmetric"
 
@@ -1046,7 +989,6 @@ describe("token endpoint", () => {
                         redirect_uri,
                         scope: "offline_access",
                         jwks_url: JWKS_MOCK_SERVER.baseUrl + "/jwks",
-                        validation : 1,
                         client_type: "confidential-asymmetric",
                         client_id  : "whatever"
                     }, config.jwtSecret);
@@ -1591,7 +1533,6 @@ describe("token endpoint", () => {
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
                 jwks_url   : JWKS_MOCK_SERVER.baseUrl + "/jwks",
-                validation : 1,
                 client_id  : "whatever",
                 scope      : "system/*.read"
             };
@@ -1630,7 +1571,6 @@ describe("token endpoint", () => {
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
                 jwks       : '{"keys":[]}',
-                validation : 1,
                 client_id  : "whatever",
                 scope      : "system/*.read"
             };
@@ -1663,7 +1603,6 @@ describe("token endpoint", () => {
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
                 jwks       : `{"keys":[${JSON.stringify({ ...PRIVATE_KEY, key_ops: ["sign"] })}]}`,
-                validation : 1,
                 client_id  : "whatever",
                 scope      : "system/*.read",
             };
@@ -1729,7 +1668,6 @@ describe("token endpoint", () => {
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
                 jwks       : `{"keys":[${JSON.stringify(publicKeyJson)}]}`,
-                validation : 1,
                 client_id  : "whatever",
                 scope      : "system/*.read",
             };
@@ -1766,7 +1704,6 @@ describe("token endpoint", () => {
 
             const sim: SMART.LaunchParams = {
                 launch_type: "backend-service",
-                validation : 1,
                 client_id  : "whatever",
                 scope      : "system/*.read",
                 jwks: JSON.stringify({

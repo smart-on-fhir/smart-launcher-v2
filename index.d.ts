@@ -66,9 +66,6 @@ declare namespace SMART {
         auth_error?: SimulatedError
         jwks_url?: string
         jwks?: string
-
-        // currently 0|1 as bool but could use more numbers for subtypes
-        validation?: 0 | 1
         pkce?: PKCEValidation
         client_type?: SMARTClientType
     }

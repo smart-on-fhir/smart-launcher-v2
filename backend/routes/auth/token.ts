@@ -264,19 +264,19 @@ export default class TokenHandler {
             throw new InvalidRequestError('Could not decode the "client_assertion" parameter').status(401)
         }
 
-        if (client.validation === 1) {
-            if (!client.client_id) {
-                throw new InvalidClientError("The client has no client_id defined").status(401)
-            }
+        // if (client.validation === 1) {
+        //     if (!client.client_id) {
+        //         throw new InvalidClientError("The client has no client_id defined").status(401)
+        //     }
 
-            if (!client.scope) {
-                throw new InvalidClientError("The client has no scopes allowed").status(401)
-            }
+        //     if (!client.scope) {
+        //         throw new InvalidClientError("The client has no scopes allowed").status(401)
+        //     }
 
-            if (!client.jwks && !client.jwks_url) {
-                throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`).status(401)
-            }
-        }
+        //     if (!client.jwks && !client.jwks_url) {
+        //         throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`).status(401)
+        //     }
+        // }
 
 
         // Check required token claims and headers -----------------------------
@@ -344,13 +344,13 @@ export default class TokenHandler {
         // (This is similar to how we disable client authn checks for symmetric
         // authn, if no client secret is set in app registration.)
         if (!client.jwks_url && !client.jwks) {
-            if (client.validation === 1) {
-                throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`)
-            }
+            // if (client.validation === 1) {
+            //     throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`)
+            // }
             return;
         }
 
-        if (client.validation === 1) {
+        // if (client.validation === 1) {
             // Build a set of "allowed keys" as the union of all keys in jwks and
             // all keys in jwks_uri
             // ---------------------------------------------------------------------
@@ -399,7 +399,7 @@ export default class TokenHandler {
             if (jwtHeaders.jku && jwtHeaders.jku !== client.jwks_url) {
                 throw new InvalidRequestError("Invalid jku header of the assertion token token. must be '%s'", client.jwks_url).status(401)
             }
-        }
+        // }
     }
 
     protected async fetchJwks(url: string): Promise<SMART.JWKS> {
@@ -512,47 +512,36 @@ export default class TokenHandler {
         }
 
         const secret = authorizationToken.client_secret
-        const authHeader = String(this.request.headers.authorization || "").trim();
+        
+        if (secret) {
+            const authHeader = String(this.request.headers.authorization || "").trim();
 
-        if (!secret) {
-            if (authorizationToken.validation) {
-                throw new InvalidClientError("The client has no client_secret defined").status(401)
+            if (!authHeader || authHeader.search(/^basic\s*/i) !== 0) {
+                throw new InvalidRequestError("Basic authentication is required for confidential clients").status(401)
             }
-            return
-        }
 
-        if (!authHeader || authHeader.search(/^basic\s*/i) !== 0) {
-            throw new InvalidRequestError("Basic authentication is required for confidential clients").status(401)
-        }
+            let auth: string | string[] = authHeader.replace(/^basic\s*/i, "")
 
-        // if (!authHeader || authHeader.search(/^basic\s*/i) !== 0) {
-        //     if (secret) {
-        //         throw new InvalidRequestError("Basic authentication is required for confidential clients").status(401)
-        //     }
-        //     return;
-        // }
+            // Check for empty auth
+            if (!auth) {
+                throw new InvalidRequestError("The authorization header '%s' cannot be empty", authHeader).status(401)
+            }
 
-        let auth: string | string[] = authHeader.replace(/^basic\s*/i, "")
+            // base64 decode and split
+            auth = Buffer.from(auth, "base64").toString().split(":")
 
-        // Check for empty auth
-        if (!auth) {
-            throw new InvalidRequestError("The authorization header '%s' cannot be empty", authHeader).status(401)
-        }
+            // Check for bad auth syntax
+            if (auth.length !== 2) {
+                throw new InvalidRequestError("The decoded header must contain '{client_id}:{client_secret}'").status(401)
+            }
 
-        // base64 decode and split
-        auth = Buffer.from(auth, "base64").toString().split(":")
+            if (authorizationToken.client_id && authorizationToken.client_id !== auth[0]) {
+                throw new InvalidClientError("Invalid client_id in the basic auth header").status(401)
+            }
 
-        // Check for bad auth syntax
-        if (auth.length !== 2) {
-            throw new InvalidRequestError("The decoded header must contain '{client_id}:{client_secret}'").status(401)
-        }
-
-        if (authorizationToken.client_id && authorizationToken.client_id !== auth[0]) {
-            throw new InvalidClientError("Invalid client_id in the basic auth header").status(401)
-        }
-
-        if (secret !== auth[1]) {
-            throw new InvalidClientError("Invalid client_secret in the basic auth header").status(401)
+            if (secret !== auth[1]) {
+                throw new InvalidClientError("Invalid client_secret in the basic auth header").status(401)
+            }
         }
     }
 

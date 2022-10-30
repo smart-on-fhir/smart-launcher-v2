@@ -102,8 +102,3 @@ details {
 details + details {
     border-top: 1px dashed #CCC;
 }
-
-.form-group + .form-group {
-    border-top: 1px dashed #DDD;
-    padding-top: 1em;
-}
