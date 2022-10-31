@@ -1,18 +1,19 @@
-import { oauth2 }              from "fhirclient"
-import { useSearchParams }     from "react-router-dom"
-import { useEffect, useState } from "react"
-import Client                  from "fhirclient/lib/Client"
-import ServerInfo              from "./ServerInfo"
-import { TokenResponse }       from "./TokenResponse"
-import IDToken                 from "./IDToken"
-import SMARTInfo               from "./SMARTInfo"
+import { oauth2 }                 from "fhirclient"
+import { useSearchParams }        from "react-router-dom"
+import { useEffect, useState }    from "react"
+import Client                     from "fhirclient/lib/Client"
+import { Helmet, HelmetProvider } from "react-helmet-async"
+import ServerInfo                 from "./ServerInfo"
+import { TokenResponse }          from "./TokenResponse"
+import IDToken                    from "./IDToken"
+import SMARTInfo                  from "./SMARTInfo"
 // import ClientInfo              from "./Client"
-import RefreshToken            from "./RefreshToken"
-import LaunchPanel             from "./LaunchPanel"
-import Patient                 from "./Patient"
-import Encounter               from "./Encounter"
-import User                    from "./User"
-import { decode }              from "../../isomorphic/codec"
+import RefreshToken               from "./RefreshToken"
+import LaunchPanel                from "./LaunchPanel"
+import Patient                    from "./Patient"
+import Encounter                  from "./Encounter"
+import User                       from "./User"
+import { decode }                 from "../../isomorphic/codec"
 import "./style.css"
 
 
@@ -149,36 +150,41 @@ export default function SampleApp()
     }
 
     return (
-        <div className="flex-row content sample-app" style={{ flex: "1 1 0px" }}>
-            { client.state.clientPublicKeySetUrl && (
-                <p className="alert alert-warning" style={{ flex: "1 1 100%" }}>
-                    <i className="glyphicon glyphicon-info-sign" /> This
-                    app can be authorized using the public keys found
-                    at <a href={client.state.clientPublicKeySetUrl} target="_blank" rel="noreferrer noopener">
-                        {client.state.clientPublicKeySetUrl}
-                    </a>
-                </p>
-            )}
-            
-            { launchParams.launch_type && launchParams.launch_type.includes("standalone") && (
-                <div className="panel" style={{ flex: "1 1 100%" }}>
-                    <LaunchPanel
-                        aud={ client.state.serverUrl }
-                        scope={ client.state.scope }
-                        client_id={ client.state.clientId }
-                        pkce={ client.state.codeChallenge ? "ifSupported" : "disabled" }
-                    />
-                </div>
-            )}
-            <ServerInfo    client={client} />
-            <SMARTInfo     client={client} />
-            {/* <ClientInfo    params={launchParams} /> */}
-            <TokenResponse client={client} />
-            <IDToken       client={client} />
-            <RefreshToken  client={client} />
-            <User          client={client} />
-            <Patient       client={client} />
-            <Encounter     client={client} />
-        </div>
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - Sample App</title>
+            </Helmet>
+            <div className="flex-row content sample-app" style={{ flex: "1 1 0px" }}>
+                { client.state.clientPublicKeySetUrl && (
+                    <p className="alert alert-warning" style={{ flex: "1 1 100%" }}>
+                        <i className="glyphicon glyphicon-info-sign" /> This
+                        app can be authorized using the public keys found
+                        at <a href={client.state.clientPublicKeySetUrl} target="_blank" rel="noreferrer noopener">
+                            {client.state.clientPublicKeySetUrl}
+                        </a>
+                    </p>
+                )}
+                
+                { launchParams.launch_type && launchParams.launch_type.includes("standalone") && (
+                    <div className="panel" style={{ flex: "1 1 100%" }}>
+                        <LaunchPanel
+                            aud={ client.state.serverUrl }
+                            scope={ client.state.scope }
+                            client_id={ client.state.clientId }
+                            pkce={ client.state.codeChallenge ? "ifSupported" : "disabled" }
+                        />
+                    </div>
+                )}
+                <ServerInfo    client={client} />
+                <SMARTInfo     client={client} />
+                {/* <ClientInfo    params={launchParams} /> */}
+                <TokenResponse client={client} />
+                <IDToken       client={client} />
+                <RefreshToken  client={client} />
+                <User          client={client} />
+                <Patient       client={client} />
+                <Encounter     client={client} />
+            </div>
+        </HelmetProvider>
     )
 }

@@ -1,5 +1,6 @@
 import { useReducer }                      from "react"
 import { useSearchParams }                 from "react-router-dom"
+import { Helmet, HelmetProvider }          from "react-helmet-async"
 import useFetch                            from "../../hooks/useFetch"
 import { ACCESS_TOKEN, formatAge, highlight, humanName } from "../../lib"
 import "./patient-picker.css"
@@ -159,7 +160,10 @@ export default function PatientPicker() {
     pureBaseUrl.search = ""
 
     return (
-        <>
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - Select Patient</title>
+            </Helmet>
             <div className="container-fluid patient-picker" style={{ maxWidth: "80em" }}>
                 { error && <div className="row">
                     <br />
@@ -335,6 +339,6 @@ export default function PatientPicker() {
                     </div>
                 </div>
             </div>
-        </>
+        </HelmetProvider>
     )
 }

@@ -1,9 +1,9 @@
-
-import { Encounter }             from "fhir/r4"
-import moment                    from "moment"
-import { useEffect, useReducer } from "react"
-import { useSearchParams }       from "react-router-dom"
-import { ACCESS_TOKEN, humanName }             from "../../lib"
+import { Encounter }               from "fhir/r4"
+import moment                      from "moment"
+import { useEffect, useReducer }   from "react"
+import { useSearchParams }         from "react-router-dom"
+import { Helmet, HelmetProvider }  from "react-helmet-async"
+import { ACCESS_TOKEN, humanName } from "../../lib"
 import "./encounter-picker.css"
 
 
@@ -283,7 +283,10 @@ export default function EncounterPicker() {
     
 
     return (
-        <>
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - Select Encounter</title>
+            </Helmet>
             <div className="container-fluid encounter-picker" style={{ maxWidth: "80em" }}>
                 { error && <div className="row">
                     <br />
@@ -385,6 +388,6 @@ export default function EncounterPicker() {
                     </div>
                 </div>
             </div>
-        </>
+        </HelmetProvider>
     )
 }

@@ -1,11 +1,12 @@
-import { SMART }        from "../../../"
-import { encode }       from "../../isomorphic/codec"
-import pkg              from "../../../package.json"
+import { useEffect, useRef, useState }     from "react"
+import { Helmet, HelmetProvider }          from "react-helmet-async"
+import { SMART }                           from "../../../"
+import { encode }                          from "../../isomorphic/codec"
+import pkg                                 from "../../../package.json"
+import UserPicker                          from "../UserPicker"
+import PatientInput                        from "../PatientInput"
+import { copyElement }                     from "../../lib"
 import useLauncherQuery, { LauncherQuery } from "../../hooks/useLauncherQuery"
-import UserPicker       from "../UserPicker"
-import PatientInput     from "../PatientInput"
-import { copyElement }  from "../../lib"
-import { useEffect, useRef, useState } from "react"
 
 
 const launchTypes = [
@@ -96,7 +97,7 @@ export default function Launcher() {
     const { launch_type, sim_ehr } = launch
     const { fhir_version, launch_url, tab } = query
 
-    console.log("launch:", launch, query)
+    // console.log("launch:", launch, query)
 
     const launchCode = encode({
         ...DEFAULT_LAUNCH_PARAMS,
@@ -174,105 +175,110 @@ export default function Launcher() {
     let validationErrors = getValidationErrors(launch, query);
     
     return (
-        <div className="container">
-            <h1 className="text-primary">
-                <a href="/" style={{ textDecoration: "none" }}>
-                    <img src="/logo.png" alt="SMART Logo" height={32} style={{ margin: "-6px 0px 0 0" }} /> SMART Launcher
-                </a>
-            </h1>
-            <br/>
-            <ul className="nav nav-tabs" role="tablist">
-                <li role="presentation" className={ tab === "0" ? "active" : undefined } onClick={ () => setQuery({ tab: "0" }) }>
-                    <b role="tab">App Launch Options</b>
-                </li>
-                {/* <li role="presentation" className={ tab === "1" ? "active" : undefined } onClick={ () => setQuery({ tab: "1" }) }>
-                    <b role="tab">App Registration Options</b>
-                </li> */}
-                <li role="presentation" className={ tab === "2" ? "active" : undefined } onClick={ () => setQuery({ tab: "2" }) }>
-                    <b role="tab">Client Registration & Validation</b>
-                </li>
-            </ul>
-            <br/>
-            <form onSubmit={e => e.preventDefault()}>
-                {/* <button type="submit">Submit</button> */}
-                { tab === "0" && <LaunchTab /> }
-                {/* { tab === "1" && <ClientRegistrationTab /> } */}
-                { tab === "2" && <ValidationTab /> }
-                
-                { validationErrors.length && !(validationErrors.length === 1 && validationErrors[0] === "Missing app launch URL") ?
-                    <div className="text-danger" style={{ background: "#f9f3f4", padding: "5px 15px", borderRadius: 5 }}>
-                        <i className="glyphicon glyphicon-exclamation-sign"/> {validationErrors.join("; ")}
-                    </div> :
-                    <div style={{ padding: "5px 15px" }}>&nbsp;</div>
-                }
-                <div className="mt-2" style={{ background: "#F3F3F3", padding: "10px 15px", borderRadius: 5 }}>
-                    <h4 className="text-success mt-0">
-                        <i className="glyphicon glyphicon-fire"/> {
-                        isStandaloneLaunch || launch_type === "backend-service" ? "Server's FHIR Base URL" : "App's Launch URL"
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher</title>
+            </Helmet>
+            <div className="container">
+                <h1 className="text-primary">
+                    <a href="/" style={{ textDecoration: "none" }}>
+                        <img src="/logo.png" alt="SMART Logo" height={32} style={{ margin: "-6px 0px 0 0" }} /> SMART Launcher
+                    </a>
+                </h1>
+                <br/>
+                <ul className="nav nav-tabs" role="tablist">
+                    <li role="presentation" className={ tab === "0" ? "active" : undefined } onClick={ () => setQuery({ tab: "0" }) }>
+                        <b role="tab">App Launch Options</b>
+                    </li>
+                    {/* <li role="presentation" className={ tab === "1" ? "active" : undefined } onClick={ () => setQuery({ tab: "1" }) }>
+                        <b role="tab">App Registration Options</b>
+                    </li> */}
+                    <li role="presentation" className={ tab === "2" ? "active" : undefined } onClick={ () => setQuery({ tab: "2" }) }>
+                        <b role="tab">Client Registration & Validation</b>
+                    </li>
+                </ul>
+                <br/>
+                <form onSubmit={e => e.preventDefault()}>
+                    {/* <button type="submit">Submit</button> */}
+                    { tab === "0" && <LaunchTab /> }
+                    {/* { tab === "1" && <ClientRegistrationTab /> } */}
+                    { tab === "2" && <ValidationTab /> }
+                    
+                    { validationErrors.length && !(validationErrors.length === 1 && validationErrors[0] === "Missing app launch URL") ?
+                        <div className="text-danger" style={{ background: "#f9f3f4", padding: "5px 15px", borderRadius: 5 }}>
+                            <i className="glyphicon glyphicon-exclamation-sign"/> {validationErrors.join("; ")}
+                        </div> :
+                        <div style={{ padding: "5px 15px" }}>&nbsp;</div>
                     }
-                    </h4>
-                    <div style={{ display: "flex" }}>
-                        <div style={{ flex: "10 1 0" }}>
-                            <div className="input-group">
-                                <input
-                                    id="launch-url"
-                                    type="url"
-                                    className="form-control"
-                                    value={ isStandaloneLaunch || isBackendService ? aud : launch_url }
-                                    onChange={ e => !isStandaloneLaunch && !isBackendService && setQuery({ launch_url: e.target.value }) }
-                                    readOnly={ isStandaloneLaunch || isBackendService }
-                                />
-                                <span className="input-group-btn">
-                                    { isStandaloneLaunch || isBackendService ? 
-                                        <button className="btn btn-primary" onClick={() => copyElement("#launch-url")}>Copy</button> :
-                                        validationErrors.length ? 
-                                            <button className="btn btn-default" disabled>Launch</button> :
-                                            <a
-                                                id="ehr-launch-url"
-                                                href={userLaunchUrl.href}
-                                                target="_blank"
-                                                rel="noreferrer noopener"
-                                                className={"btn btn-primary" + (validationErrors.length ? " disabled": "")}>
-                                                Launch
-                                            </a> }
-                                </span>
+                    <div className="mt-2" style={{ background: "#F3F3F3", padding: "10px 15px", borderRadius: 5 }}>
+                        <h4 className="text-success mt-0">
+                            <i className="glyphicon glyphicon-fire"/> {
+                            isStandaloneLaunch || launch_type === "backend-service" ? "Server's FHIR Base URL" : "App's Launch URL"
+                        }
+                        </h4>
+                        <div style={{ display: "flex" }}>
+                            <div style={{ flex: "10 1 0" }}>
+                                <div className="input-group">
+                                    <input
+                                        id="launch-url"
+                                        type="url"
+                                        className="form-control"
+                                        value={ isStandaloneLaunch || isBackendService ? aud : launch_url }
+                                        onChange={ e => !isStandaloneLaunch && !isBackendService && setQuery({ launch_url: e.target.value }) }
+                                        readOnly={ isStandaloneLaunch || isBackendService }
+                                    />
+                                    <span className="input-group-btn">
+                                        { isStandaloneLaunch || isBackendService ? 
+                                            <button className="btn btn-primary" onClick={() => copyElement("#launch-url")}>Copy</button> :
+                                            validationErrors.length ? 
+                                                <button className="btn btn-default" disabled>Launch</button> :
+                                                <a
+                                                    id="ehr-launch-url"
+                                                    href={userLaunchUrl.href}
+                                                    target="_blank"
+                                                    rel="noreferrer noopener"
+                                                    className={"btn btn-primary" + (validationErrors.length ? " disabled": "")}>
+                                                    Launch
+                                                </a> }
+                                    </span>
+                                </div>
+                            </div>
+                            <div style={{ flex: "1 1 0", marginLeft: 5 }}>
+                                { validationErrors.filter(e => e !== "Missing app launch URL" && e !== "Invalid app launch URL").length ? 
+                                    <button className="btn btn-default" disabled>Launch Sample App</button> :
+                                    <a href={sampleLaunchUrl.href} target="_blank" rel="noreferrer noopener" className="btn btn-default">
+                                        <span className="text-success">Launch Sample App</span>
+                                    </a>
+                                }
                             </div>
                         </div>
-                        <div style={{ flex: "1 1 0", marginLeft: 5 }}>
-                            { validationErrors.filter(e => e !== "Missing app launch URL" && e !== "Invalid app launch URL").length ? 
-                                <button className="btn btn-default" disabled>Launch Sample App</button> :
-                                <a href={sampleLaunchUrl.href} target="_blank" rel="noreferrer noopener" className="btn btn-default">
-                                    <span className="text-success">Launch Sample App</span>
-                                </a>
-                            }
-                        </div>
+                        { isStandaloneLaunch || launch_type === "backend-service" ?
+                            <span className="small text-muted">
+                                Your app should use this url to connect to the sandbox FHIR server
+                            </span> :
+                            <span className="small text-muted">
+                                Full url of the page in your app that will initialize the
+                                SMART session (often the path to a launch.html file or endpoint)
+                            </span>
+                        }
                     </div>
-                    { isStandaloneLaunch || launch_type === "backend-service" ?
-                        <span className="small text-muted">
-                            Your app should use this url to connect to the sandbox FHIR server
-                        </span> :
-                        <span className="small text-muted">
-                            Full url of the page in your app that will initialize the
-                            SMART session (often the path to a launch.html file or endpoint)
-                        </span>
-                    }
-                </div>
+                    <br/>
+                </form>
+                <hr/>
+                <p className="text-center">
+                    Please report any issues you encounter to the <a
+                    href="https://groups.google.com/forum/#!forum/smart-on-fhir"
+                    rel="noreferrer noopener"
+                    target="_blank">
+                        SMART Community Forum
+                    </a> or submit an issue or PR at <a
+                    href="https://github.com/smart-on-fhir/smart-launcher-v2/"
+                    rel="noreferrer noopener"
+                    target="_blank">GitHub</a>.
+                </p>
                 <br/>
-            </form>
-            <hr/>
-            <p className="text-center">
-                Please report any issues you encounter to the <a
-                href="https://groups.google.com/forum/#!forum/smart-on-fhir"
-                rel="noreferrer noopener"
-                target="_blank">
-                    SMART Community Forum
-                </a> or submit an issue or PR at <a
-                href="https://github.com/smart-on-fhir/smart-launcher-v2/"
-                rel="noreferrer noopener"
-                target="_blank">GitHub</a>.
-            </p>
-            <br/>
-        </div>
+            </div>
+        </HelmetProvider>
     );
 }
 

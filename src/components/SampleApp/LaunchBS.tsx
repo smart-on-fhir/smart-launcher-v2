@@ -4,6 +4,7 @@ import { fhirclient }                               from "fhirclient/lib/types"
 import { signCompactJws, importJWK }                from "fhirclient/lib/security/browser"
 import SyntaxHighlighter                            from "react-syntax-highlighter"
 import { xcode }                                    from "react-syntax-highlighter/dist/esm/styles/hljs"
+import { Helmet, HelmetProvider }                   from "react-helmet-async"
 import Clip                                         from "../Clip"
 import { decode, encode }                           from "../../isomorphic/codec"
 import useFetch                                     from "../../hooks/useFetch"
@@ -411,23 +412,28 @@ export default function LaunchBS() {
     }
 
     return (
-        <div className="container">
-            <h3>SMART Backend Service <span className="text-muted">Sample App</span></h3>
-            <hr/>
-            { !client.jwks && !client.jwks_url && (
-                <p className="alert alert-warning" style={{ flex: "1 1 100%" }}>
-                    <i className="glyphicon glyphicon-info-sign" /> This
-                    app can be authorized using the public keys found
-                    at <a href="https://www.hl7.org/fhir/smart-app-launch/RS384.public.json" target="_blank" rel="noreferrer noopener">
-                        https://www.hl7.org/fhir/smart-app-launch/RS384.public.json
-                    </a>
-                </p>
-            )}
-            <WellKnownConfig state={state} dispatch={dispatch} />
-            <LaunchForm state={state} dispatch={dispatch} />
-            { state.tokenEndpoint && <CreateAssertion state={state} dispatch={dispatch} /> }
-            { state.assertion && <GetAccessToken state={state} dispatch={dispatch} /> }
-            { state.accessToken && <FetchPatients state={state} /> }
-        </div>
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - Sample Backend Service App</title>
+            </Helmet>
+            <div className="container">
+                <h3>SMART Backend Service <span className="text-muted">Sample App</span></h3>
+                <hr/>
+                { !client.jwks && !client.jwks_url && (
+                    <p className="alert alert-warning" style={{ flex: "1 1 100%" }}>
+                        <i className="glyphicon glyphicon-info-sign" /> This
+                        app can be authorized using the public keys found
+                        at <a href="https://www.hl7.org/fhir/smart-app-launch/RS384.public.json" target="_blank" rel="noreferrer noopener">
+                            https://www.hl7.org/fhir/smart-app-launch/RS384.public.json
+                        </a>
+                    </p>
+                )}
+                <WellKnownConfig state={state} dispatch={dispatch} />
+                <LaunchForm state={state} dispatch={dispatch} />
+                { state.tokenEndpoint && <CreateAssertion state={state} dispatch={dispatch} /> }
+                { state.assertion && <GetAccessToken state={state} dispatch={dispatch} /> }
+                { state.accessToken && <FetchPatients state={state} /> }
+            </div>
+        </HelmetProvider>
     )
 }

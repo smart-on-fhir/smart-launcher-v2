@@ -1,6 +1,7 @@
-import { useSearchParams }      from "react-router-dom"
-import { useEffect, useState }  from "react"
-import { formatAge, humanName } from "../../lib"
+import { useSearchParams }        from "react-router-dom"
+import { useEffect, useState }    from "react"
+import { Helmet, HelmetProvider } from "react-helmet-async"
+import { formatAge, humanName }   from "../../lib"
 import "./style.css"
 
 
@@ -55,41 +56,46 @@ export default function EHR() {
     let userName    = user ? humanName(user) : "Unknown"
 
     return (
-        <div className="ehr">
-            <div className="ehr-header">
-                <div className="flex-row">
-                    <div className="logo">
-                        <img src="/logo.png" alt="SMART Logo" /> Simulated EHR
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - EHR View</title>
+            </Helmet>
+            <div className="ehr">
+                <div className="ehr-header">
+                    <div className="flex-row">
+                        <div className="logo">
+                            <img src="/logo.png" alt="SMART Logo" /> Simulated EHR
+                        </div>
+                        <div>
+                            <i className="glyphicon glyphicon-user"/>&nbsp;
+                            patient: <b>{ patientName }</b>,
+                            age: <b>{ patientAge }</b>{patient?.deceasedBoolean || patient?.deceasedDateTime ? " (deceased)" : ""},
+                            sex: <b>{ patientSex }</b>
+                        </div>
+                        <div>
+                            <i className="glyphicon glyphicon-user"/>&nbsp;
+                            user: <b>{ userName }</b>
+                        </div>
                     </div>
-                    <div>
-                        <i className="glyphicon glyphicon-user"/>&nbsp;
-                        patient: <b>{ patientName }</b>,
-                        age: <b>{ patientAge }</b>{patient?.deceasedBoolean || patient?.deceasedDateTime ? " (deceased)" : ""},
-                        sex: <b>{ patientSex }</b>
+                </div>
+                <div className="ehr-main-row">
+                    <div className="ehr-sidebar">
+                        <h3>EHR Sidebar</h3>
                     </div>
-                    <div>
-                        <i className="glyphicon glyphicon-user"/>&nbsp;
-                        user: <b>{ userName }</b>
+                    <iframe name="iframe" id="frame" title="EHR Frame" src={launchUrl + ""}></iframe>
+                    <div className="ehr-sidebar">
+                        <h3>EHR Sidebar</h3>
+                    </div>
+                </div>
+                <div className="ehr-status-bar">
+                    <div className="flex-row">
+                        <div className="text-muted" style={{ flex: "0 1 auto" }}>EHR Status bar</div>
+                        <div>Patient ID: { patientID }</div>
+                        <div>User ID: { userID }</div>
+                        <div>Encounter ID: { encounterID }</div>
                     </div>
                 </div>
             </div>
-            <div className="ehr-main-row">
-                <div className="ehr-sidebar">
-                    <h3>EHR Sidebar</h3>
-                </div>
-                <iframe name="iframe" id="frame" title="EHR Frame" src={launchUrl + ""}></iframe>
-                <div className="ehr-sidebar">
-                    <h3>EHR Sidebar</h3>
-                </div>
-            </div>
-            <div className="ehr-status-bar">
-                <div className="flex-row">
-                    <div className="text-muted" style={{ flex: "0 1 auto" }}>EHR Status bar</div>
-                    <div>Patient ID: { patientID }</div>
-                    <div>User ID: { userID }</div>
-                    <div>Encounter ID: { encounterID }</div>
-                </div>
-            </div>
-        </div>
+        </HelmetProvider>
     )
 }

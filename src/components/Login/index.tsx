@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import useFetch from "../../hooks/useFetch";
-import { ACCESS_TOKEN, humanName } from "../../lib";
+import { FormEvent, useEffect, useRef, useState } from "react"
+import { Helmet, HelmetProvider }                 from "react-helmet-async"
+import { useSearchParams }                        from "react-router-dom"
+import useFetch                                   from "../../hooks/useFetch"
+import { ACCESS_TOKEN, humanName }                from "../../lib"
 
 
 export default function Login() {
@@ -66,76 +67,81 @@ export default function Login() {
     }, [firstID])
 
     return (
-        <div className="container-fluid" style={{
-            maxWidth: "40em",
-            minHeight: "100vh",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center"
-        }}>
-            <div className="row">
-                <div className="col-sm-12">
-                    <h2 className="mt-0">
-                        <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
-                        { loginType === "provider" ? "Practitioner " : "Patient " } Login
-                    </h2>
-                    <hr/>
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - { loginType === "provider" ? "Practitioner" : "Patient" } Login</title>
+            </Helmet>
+            <div className="container-fluid" style={{
+                maxWidth: "40em",
+                minHeight: "100vh",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center"
+            }}>
+                <div className="row">
+                    <div className="col-sm-12">
+                        <h2 className="mt-0">
+                            <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
+                            { loginType === "provider" ? "Practitioner " : "Patient " } Login
+                        </h2>
+                        <hr/>
+                    </div>
                 </div>
-            </div>
 
 
-            <div className="row">
-                <div className="col-sm-12">
-                    { noData && <div className="alert alert-danger">
-                        <h5><i className="glyphicon glyphicon-exclamation-sign" /> No { loginType === "provider" ? "Providers" : "Patients"} Found!</h5>
-                        <small>Continue without a user, or return to the launch screen to include additional data.</small>
-                    </div> }
-                    {
-                        loginType === "provider" ?
-                            <div className="form-group">
-                                <label>Practitioner</label>
-                                <select className="form-control" value={id} onChange={e => setId(e.target.value)}>
-                                    <option value="">Please Select</option>
-                                    { recs.map((rec, i) => (
-                                        <option value={rec.id} key={i}>{ humanName(rec) }</option>
-                                    )) }
-                                </select>
-                            </div> :
-                            <div className="form-group">
-                                <label>Patient</label>
-                                <select className="form-control" value={id} onChange={e => setId(e.target.value)}>
-                                    <option value="">Please Select</option>
-                                    { recs.map((rec, i) => (
-                                        <option value={rec.id} key={i}>{ humanName(rec) }</option>
-                                    )) }
-                                </select>
+                <div className="row">
+                    <div className="col-sm-12">
+                        { noData && <div className="alert alert-danger">
+                            <h5><i className="glyphicon glyphicon-exclamation-sign" /> No { loginType === "provider" ? "Providers" : "Patients"} Found!</h5>
+                            <small>Continue without a user, or return to the launch screen to include additional data.</small>
+                        </div> }
+                        {
+                            loginType === "provider" ?
+                                <div className="form-group">
+                                    <label>Practitioner</label>
+                                    <select className="form-control" value={id} onChange={e => setId(e.target.value)}>
+                                        <option value="">Please Select</option>
+                                        { recs.map((rec, i) => (
+                                            <option value={rec.id} key={i}>{ humanName(rec) }</option>
+                                        )) }
+                                    </select>
+                                </div> :
+                                <div className="form-group">
+                                    <label>Patient</label>
+                                    <select className="form-control" value={id} onChange={e => setId(e.target.value)}>
+                                        <option value="">Please Select</option>
+                                        { recs.map((rec, i) => (
+                                            <option value={rec.id} key={i}>{ humanName(rec) }</option>
+                                        )) }
+                                    </select>
+                                </div>
+                        }
+                        <div className="form-group">
+                            <label htmlFor="password">Password</label>
+                            <input type="password" defaultValue="demo-password" className="form-control" disabled />
+                            <div className="help-text text-muted">
+                                This login is for demonstration purposes only. ANY password will be accepted.
                             </div>
-                    }
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input type="password" defaultValue="demo-password" className="form-control" disabled />
-                        <div className="help-text text-muted">
-                            This login is for demonstration purposes only. ANY password will be accepted.
                         </div>
-                    </div>
 
-                    <hr/>
-                    <div className="form-group">
-                        <div className="col-xs-12 text-center">
-                            <button
-                                type="button"
-                                className="btn btn-success"
-                                style={{ minWidth: "6em" }}
-                                onClick={submit}
-                                disabled={!id}
-                                ref={submitButton}
-                            >
-                                { noData ? "Continue Without User" : "Login" }
-                            </button>
+                        <hr/>
+                        <div className="form-group">
+                            <div className="col-xs-12 text-center">
+                                <button
+                                    type="button"
+                                    className="btn btn-success"
+                                    style={{ minWidth: "6em" }}
+                                    onClick={submit}
+                                    disabled={!id}
+                                    ref={submitButton}
+                                >
+                                    { noData ? "Continue Without User" : "Login" }
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </HelmetProvider>
     )
 }

@@ -1,5 +1,6 @@
-import React               from "react"
-import { useSearchParams } from "react-router-dom"
+import React                      from "react"
+import { useSearchParams }        from "react-router-dom"
+import { Helmet, HelmetProvider } from "react-helmet-async"
 import "./style.css"
 
 
@@ -86,37 +87,42 @@ export default function AuthorizeLaunch() {
     }
 
     return (
-        <div className="container authorize-app">
-            <div className="row">
-                <div className="col-xs-12 col-md-offset-1 col-md-10">
-                    <h2 className="page-header">
-                        <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
-                        <span className="text-primary">Authorize App Launch</span>
-                    </h2>
+        <HelmetProvider>
+            <Helmet>
+                <title>SMART Launcher - Authorize Launch</title>
+            </Helmet>
+            <div className="container authorize-app">
+                <div className="row">
+                    <div className="col-xs-12 col-md-offset-1 col-md-10">
+                        <h2 className="page-header">
+                            <img src="/logo.png" alt="SMART Logo" height={28} style={{ margin: "-6px 10px 0 0" }} />
+                            <span className="text-primary">Authorize App Launch</span>
+                        </h2>
+                    </div>
                 </div>
-            </div>
-            <div className="row">
-                <div className="col-xs-12 col-md-offset-1 col-md-10">
-                    { groups.access.length > 0 && <div className="alert alert-warning access-alert">
-                        <b className="glyphicon glyphicon-info-sign pull-left" style={{ margin: "7px -7px -7px 7px" }}/>
-                        <ul id="access-note">{ groups.access.map((msg, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: msg }} />)) }</ul>
-                    </div> }
-                    
-                    <div className="panel-body">
-
-                        <h4 className="other text-muted">This application is requesting permission to:</h4>
+                <div className="row">
+                    <div className="col-xs-12 col-md-offset-1 col-md-10">
+                        { groups.access.length > 0 && <div className="alert alert-warning access-alert">
+                            <b className="glyphicon glyphicon-info-sign pull-left" style={{ margin: "7px -7px -7px 7px" }}/>
+                            <ul id="access-note">{ groups.access.map((msg, i) => (<li key={i} dangerouslySetInnerHTML={{ __html: msg }} />)) }</ul>
+                        </div> }
                         
-                        <ul>{ listItems  }</ul>
-                    </div>
+                        <div className="panel-body">
 
-                    <hr />
-                    <div className="text-center">
-                        <button type="button" className="btn btn-danger"  id="deny"    style={{ minWidth: "8em" }} onClick={() => submit(false)}>Deny</button> &nbsp;
-                        <button type="button" className="btn btn-success" id="approve" style={{ minWidth: "8em" }} onClick={() => submit(true )}>Approve</button>
+                            <h4 className="other text-muted">This application is requesting permission to:</h4>
+                            
+                            <ul>{ listItems  }</ul>
+                        </div>
+
+                        <hr />
+                        <div className="text-center">
+                            <button type="button" className="btn btn-danger"  id="deny"    style={{ minWidth: "8em" }} onClick={() => submit(false)}>Deny</button> &nbsp;
+                            <button type="button" className="btn btn-success" id="approve" style={{ minWidth: "8em" }} onClick={() => submit(true )}>Approve</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </HelmetProvider>
     )
 }
 
