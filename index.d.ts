@@ -2,13 +2,13 @@ import { Request } from "express-serve-static-core"
 
 declare global {
     var ENV: {
-        NODE_ENV                : string
-        PICKER_ORIGIN           : string
-        GOOGLE_ANALYTICS_ID     : string
-        
-        FHIR_SERVER_R2          : string
-        FHIR_SERVER_R3          : string
-        FHIR_SERVER_R4          : string
+        NODE_ENV           : string
+        PICKER_ORIGIN      : string
+        GOOGLE_ANALYTICS_ID: string
+        FHIR_SERVER_R2     : string
+        FHIR_SERVER_R3     : string
+        FHIR_SERVER_R4     : string
+        ACCESS_TOKEN       : string
     }
 }
 

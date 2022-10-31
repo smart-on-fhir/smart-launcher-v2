@@ -1,20 +1,6 @@
 import { InputHTMLAttributes, useState } from "react"
 import Modal from "../Modal"
 
-declare global {
-    var ENV: {
-        NODE_ENV                : string
-        PICKER_ORIGIN           : string
-        GOOGLE_ANALYTICS_ID     : string
-        
-        FHIR_SERVER_R2          : string
-        FHIR_SERVER_R3          : string
-        FHIR_SERVER_R4          : string
-    }
-
-    var patientPicker: Window | null
-}
-
 interface PatientBrowserConfig {
     /**
      * - "automatic" - Submit on change and defer that in some cases (DEFAULT)

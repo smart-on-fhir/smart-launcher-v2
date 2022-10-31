@@ -5,6 +5,7 @@ import jwt          from "jsonwebtoken"
 import jose         from "node-jose"
 import { LAUNCHER } from "./TestContext"
 import { encode }   from "../src/isomorphic/codec"
+import config       from "../backend/config"
 
 
 interface AuthorizeParams {
@@ -22,12 +23,7 @@ interface LaunchOptions extends AuthorizeParams {
     fhirVersion   ?: string
 }
 
-export const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI" +
-    "6InBhdGllbnQvKi4qIHVzZXIvKi4qIGxhdW5jaCBsYXVuY2gvcGF0aWVudCBsYXVuY2gvZW5" +
-    "jb3VudGVyIG9wZW5pZCBmaGlyVXNlciBwcm9maWxlIG9mZmxpbmVfYWNjZXNzIiwiY29kZV9" +
-    "jaGFsbGVuZ2VfbWV0aG9kIjoiUzI1NiIsImNvZGVfY2hhbGxlbmdlIjoiejJnZVU1VVFGV3V" +
-    "ERzdZUW1OWTNFSmtSWW5KaXJ5VkdVaXRLRl9KNE1PSSIsImlhdCI6MTY2NjcwMzI3MiwiZXh" +
-    "wIjoyNjY2NzA2ODcyfQ.W7iQZgOqHi7S2mb-PEfuWu2AJvK3jbP2RrErevUYg-s";
+export const ACCESS_TOKEN = jwt.sign({ client_id: "launcherTests" }, config.jwtSecret);
 
 export function launch({
     launchParams,

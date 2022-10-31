@@ -3,7 +3,7 @@ import moment                      from "moment"
 import { useEffect, useReducer }   from "react"
 import { useSearchParams }         from "react-router-dom"
 import { Helmet, HelmetProvider }  from "react-helmet-async"
-import { ACCESS_TOKEN, humanName } from "../../lib"
+import { humanName }               from "../../lib"
 import "./encounter-picker.css"
 
 
@@ -134,7 +134,7 @@ async function fetchPatient(baseUrl: string, id: string, signal: AbortSignal): P
     const res = await fetch(baseUrl + "/Patient/" + id, {
         mode: "cors",
         headers: {
-            authorization: `Bearer ${ACCESS_TOKEN}`
+            authorization: `Bearer ${window.ENV.ACCESS_TOKEN}`
         },
         signal
     })
@@ -159,7 +159,7 @@ async function fetchEncounters(baseUrl: string, patientId: string, signal: Abort
     const res = await fetch(url, {
         mode: "cors",
         headers: {
-            authorization: `Bearer ${ACCESS_TOKEN}`
+            authorization: `Bearer ${window.ENV.ACCESS_TOKEN}`
         },
         signal
     })

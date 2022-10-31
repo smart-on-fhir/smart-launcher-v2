@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from "react"
 import { Helmet, HelmetProvider }                 from "react-helmet-async"
 import { useSearchParams }                        from "react-router-dom"
 import useFetch                                   from "../../hooks/useFetch"
-import { ACCESS_TOKEN, humanName }                from "../../lib"
+import { humanName }                              from "../../lib"
 
 
 export default function Login() {
@@ -52,7 +52,7 @@ export default function Login() {
     
     const { data: bundle, loading } = useFetch<fhir4.Bundle<fhir4.Patient|fhir4.Practitioner>>(fetchUrl, {
         headers: {
-            authorization: `Bearer ${ACCESS_TOKEN}`
+            authorization: `Bearer ${window.ENV.ACCESS_TOKEN}`
         }
     })
     const recs    = bundle?.entry?.map(e => e.resource!) || []

@@ -2,7 +2,7 @@ import { useReducer }                      from "react"
 import { useSearchParams }                 from "react-router-dom"
 import { Helmet, HelmetProvider }          from "react-helmet-async"
 import useFetch                            from "../../hooks/useFetch"
-import { ACCESS_TOKEN, formatAge, highlight, humanName } from "../../lib"
+import { formatAge, highlight, humanName } from "../../lib"
 import "./patient-picker.css"
 
 
@@ -109,7 +109,7 @@ export default function PatientPicker() {
 
     const { data, loading, error } = useFetch<fhir4.Bundle<fhir4.Patient>>(url.href, {
         headers: {
-            authorization: `Bearer ${ACCESS_TOKEN}`
+            authorization: `Bearer ${window.ENV.ACCESS_TOKEN}`
         }
     })
 

@@ -1,7 +1,7 @@
 
 import { InputHTMLAttributes } from "react"
 import useFetch                from "../../hooks/useFetch"
-import { ACCESS_TOKEN, humanName }           from "../../lib"
+import { humanName }           from "../../lib"
 import "./UserPicker.css"
 
 
@@ -29,7 +29,7 @@ export default function UserPicker({
 
     const { data: bundle, error, loading } = useFetch<fhir4.Bundle<fhir4.Practitioner>>(url.href, {
         headers: {
-            authorization: `Bearer ${ACCESS_TOKEN}`
+            authorization: `Bearer ${window.ENV.ACCESS_TOKEN}`
         }
     })
     const records = bundle?.entry?.map(p => p.resource!) || []
