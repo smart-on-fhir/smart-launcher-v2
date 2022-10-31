@@ -8,19 +8,9 @@ import { asyncRouteWrap }       from "../../lib"
 
 const router = Router({ mergeParams: true })
 
-router.get("/.well-known/smart-configuration" , getWellKnownSmartConfig )
+router.get("/.well-known/smart-configuration" , getWellKnownSmartConfig)
 router.get("/.well-known/openid-configuration", getWellKnownOpenidConfig)
-router.get("/metadata"                        , getCapabilityStatement  )
-
-// Provide launch_id if the CDS Sandbox asks for it
-// router.post("/_services/smart/launch", express.json(), (req, res) => {
-//     res.json({
-//         launch_id: base64url.encode(JSON.stringify({
-//             context: req.body.parameters || {}
-//         }))
-//     });
-// });
-
+router.get("/metadata", asyncRouteWrap(getCapabilityStatement))
 router.use("/", text({ type: "*/*", limit: 1e6 }), asyncRouteWrap(fhirProxy))
 
 export default router

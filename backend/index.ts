@@ -18,7 +18,7 @@ app.use(cors({ origin: true, credentials: true }))
 
 app.use(express.static(Path.join(__dirname, '../build/')));
 
-app.get("/smart-style.json", (req, res) => {
+app.get("/smart-style.json", (_, res) => {
     res.json({
         color_background    : "#edeae3",
         color_error         : "#9e2d2d",
@@ -44,13 +44,13 @@ app.use(["/v/:fhir_release/sim/:sim/fhir", "/v/:fhir_release/fhir"], fhirServer)
 app.get("/launcher", launcher);
 
 // Host public keys for backend services JWKS auth
-app.get("/keys", async (req, res) => {
+app.get("/keys", async (_, res) => {
     const key = await jose.JWK.asKey(config.privateKeyAsPem, "pem", { alg: "RS256", key_ops: ["verify"] })
     res.json(key.keystore.toJSON(false));
 });
 
 // Also host the public key as PEM
-app.get("/public_key", (req, res) => {
+app.get("/public_key", (_, res) => {
     FS.readFile(__dirname + "/../public-key.pem", "utf8", (err, key) => {
         if (err) {
             return res.status(500).end("Failed to read public key");
@@ -60,7 +60,7 @@ app.get("/public_key", (req, res) => {
 });
 
 // Provide some env variables to the frontend
-app.use("/env.js", (req, res) => {
+app.use("/env.js", (_, res) => {
     const out = {
         NODE_ENV                : process.env.NODE_ENV      || "production",
         PICKER_ORIGIN           : process.env.PICKER_ORIGIN || "https://patient-browser.smarthealthit.org",
@@ -78,7 +78,7 @@ app.use("/env.js", (req, res) => {
 });
 
 // React app - redirect all to ./build/index.html
-app.get("*", (req, res) => res.sendFile("index.html", { root: "./build" }));
+app.get("*", (_, res) => res.sendFile("index.html", { root: "./build" }));
 
 // Catch all errors
 app.use(globalErrorHandler)
