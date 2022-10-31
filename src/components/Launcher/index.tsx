@@ -289,202 +289,200 @@ function LaunchTab() {
     const fhirServerBaseUrl = `${origin}/v/${ query.fhir_version }/fhir/`;
 
     return (
-        <>
-            <div className="row">
-                <div className={ launch.launch_type === "backend-service" ? "col-xs-12" : "col-sm-6" }>
+        <div className="row">
+            <div className={ launch.launch_type === "backend-service" ? "col-xs-12" : "col-sm-6" }>
+                <div className="form-group">
+                    <label htmlFor="launch_type" className="text-primary">Launch Type</label>
+                    <select
+                        name="launch_type"
+                        id="launch_type"
+                        className="form-control"
+                        value={ launch.launch_type }
+                        onChange={ e => setQuery({ launch_type: e.target.value as SMART.LaunchType }) }
+                    >
+                        { launchTypes.map(o => (<option value={o.value} key={o.value}>{o.name}</option> )) }
+                    </select>
+                    <span className="help-block small">
+                        { launchTypes.find(l => l.value === launch.launch_type)?.description }
+                    </span>
+                </div>
+
+                <div className="row">
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label htmlFor="fhir_version" className="text-primary">FHIR Version</label>
+                            <select
+                                name="fhir_version"
+                                id="fhir_version"
+                                className="form-control"
+                                value={ query.fhir_version }
+                                onChange={ e => setQuery({ fhir_version: e.target.value, patient: "", provider: "" }) }>
+                                <option value="r4" disabled={!ENV.FHIR_SERVER_R4}>R4</option>
+                                <option value="r3" disabled={!ENV.FHIR_SERVER_R3}>R3 (STU3)</option>
+                                <option value="r2" disabled={!ENV.FHIR_SERVER_R2}>R2 (DSTU2)</option>
+                            </select>
+                            <span className="help-block small">
+                                Select what FHIR version your app should work with
+                            </span>
+                        </div>
+                    </div>
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label htmlFor="sim_error" className="text-primary">Simulated Error</label>
+                            <select
+                                id="sim_error"
+                                className="form-control"
+                                value={ launch.auth_error }
+                                onChange={ e => setQuery({ auth_error: e.target.value as SMART.SimulatedError }) }
+                            >
+                                <option value="">None</option>
+
+                                { launch.launch_type !== "backend-service" && <optgroup label="During the authorize request">
+                                    <option value="auth_invalid_client_id">invalid client_id</option>
+                                    <option value="auth_invalid_redirect_uri">invalid redirect_uri</option>
+                                    <option value="auth_invalid_scope">invalid scope</option>
+                                    <option value="auth_invalid_client_secret">invalid client_secret</option>
+                                </optgroup> }
+
+                                <optgroup label="During the token request">
+                                    <option value="token_invalid_token">invalid token</option>
+                                    <option value="token_expired_registration_token">expired token</option>
+                                    { launch.launch_type !== "backend-service" && <option value="token_expired_refresh_token">expired refresh token</option> }
+                                    <option value="token_invalid_scope">invalid scope</option>
+                                    { launch.launch_type === "backend-service" && <option value="token_invalid_jti">invalid jti</option> }
+                                </optgroup>
+                                
+                                <optgroup label="During FHIR requests">
+                                    <option value="request_invalid_token">invalid access token</option>
+                                    <option value="request_expired_token">expired access token</option>
+                                </optgroup>
+                            </select>
+                            <span className="help-block small">
+                                Force the server to throw certain type of error (useful for manual testing).
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                { launch.launch_type !== "backend-service" &&
+                <div className="form-group">
+                    <div style={{ borderBottom: "1px solid #EEE" }}>
+                        <label className="text-primary">Misc. Options</label>
+                    </div>
+                    { (launch.launch_type === "provider-ehr" || launch.launch_type === "patient-portal") &&
+                        <div className="checkbox">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="sim_ehr"
+                                    value="1"
+                                    checked={ launch.sim_ehr }
+                                    onChange={ e => setQuery({ sim_ehr: e.target.checked }) }
+                                /> Simulate launch within the EHR UI <span className="text-muted small">
+                                    (launch within an iFrame)
+                                </span>
+                            </label>
+                        </div>
+                    }
+                    { launch.launch_type !== "provider-ehr" && (
+                        <div className="checkbox">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="skip_login"
+                                    value="1"
+                                    disabled={
+                                        (launch.launch_type === "patient-portal"      && (launch.patient  || "").split(",").filter(Boolean).length !== 1) ||
+                                        (launch.launch_type === "provider-standalone" && (launch.provider || "").split(",").filter(Boolean).length !== 1)
+                                    }
+                                    checked={ launch.skip_login }
+                                    onChange={ e => setQuery({ skip_login: e.target.checked }) }
+                                /> Skip login screen <span className="text-muted small">
+                                    (will launch as if the selected user had logged in)
+                                </span>
+                            </label>
+                        </div>
+                    )}
+                    { launch.launch_type !== "provider-ehr" && (
+                        <div className="checkbox">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="skip_auth"
+                                    value="1"
+                                    checked={ launch.skip_auth }
+                                    onChange={ e => setQuery({ skip_auth: e.target.checked }) }
+                                /> Skip authorization screen <span className="text-muted small">
+                                    (assume the user approved the app launch)
+                                </span>
+                            </label>
+                        </div>
+                    )}
+                </div>}
+            </div>
+            { launch.launch_type !== "backend-service" ? 
+                <div className="col-sm-6">
                     <div className="form-group">
-                        <label htmlFor="launch_type" className="text-primary">Launch Type</label>
-                        <select
-                            name="launch_type"
-                            id="launch_type"
-                            className="form-control"
-                            value={ launch.launch_type }
-                            onChange={ e => setQuery({ launch_type: e.target.value as SMART.LaunchType }) }
-                        >
-                            { launchTypes.map(o => (<option value={o.value} key={o.value}>{o.name}</option> )) }
-                        </select>
+                        <label htmlFor="patient" className="text-primary">Patient(s)</label>
+                        <PatientInput
+                            onChange={list => setQuery({ patient: list })}
+                            value={ launch.patient }
+                            fhirVersion={ query.fhir_version as any }
+                            inputProps={{
+                                name: "patient",
+                                id  : "patient",
+                                placeholder: "Patient ID(s)"
+                            }}
+                        />
                         <span className="help-block small">
-                            { launchTypes.find(l => l.value === launch.launch_type)?.description }
+                            Simulates the active patient in EHR when app is launched. If
+                            no Patient ID is entered or if multiple comma delimited IDs
+                            are specified, a patient picker will be displayed as part of
+                            the launch flow.
                         </span>
                     </div>
 
-                    <div className="row">
-                        <div className="col-md-6">
-                            <div className="form-group">
-                                <label htmlFor="fhir_version" className="text-primary">FHIR Version</label>
-                                <select
-                                    name="fhir_version"
-                                    id="fhir_version"
-                                    className="form-control"
-                                    value={ query.fhir_version }
-                                    onChange={ e => setQuery({ fhir_version: e.target.value, patient: "", provider: "" }) }>
-                                    <option value="r4" disabled={!ENV.FHIR_SERVER_R4}>R4</option>
-                                    <option value="r3" disabled={!ENV.FHIR_SERVER_R3}>R3 (STU3)</option>
-                                    <option value="r2" disabled={!ENV.FHIR_SERVER_R2}>R2 (DSTU2)</option>
-                                </select>
-                                <span className="help-block small">
-                                    Select what FHIR version your app should work with
-                                </span>
-                            </div>
-                        </div>
-                        <div className="col-md-6">
-                            <div className="form-group">
-                                <label htmlFor="sim_error" className="text-primary">Simulated Error</label>
-                                <select
-                                    id="sim_error"
-                                    className="form-control"
-                                    value={ launch.auth_error }
-                                    onChange={ e => setQuery({ auth_error: e.target.value as SMART.SimulatedError }) }
-                                >
-                                    <option value="">None</option>
-
-                                    { launch.launch_type !== "backend-service" && <optgroup label="During the authorize request">
-                                        <option value="auth_invalid_client_id">invalid client_id</option>
-                                        <option value="auth_invalid_redirect_uri">invalid redirect_uri</option>
-                                        <option value="auth_invalid_scope">invalid scope</option>
-                                        <option value="auth_invalid_client_secret">invalid client_secret</option>
-                                    </optgroup> }
-
-                                    <optgroup label="During the token request">
-                                        <option value="token_invalid_token">invalid token</option>
-                                        <option value="token_expired_registration_token">expired token</option>
-                                        { launch.launch_type !== "backend-service" && <option value="token_expired_refresh_token">expired refresh token</option> }
-                                        <option value="token_invalid_scope">invalid scope</option>
-                                        { launch.launch_type === "backend-service" && <option value="token_invalid_jti">invalid jti</option> }
-                                    </optgroup>
-                                    
-                                    <optgroup label="During FHIR requests">
-                                        <option value="request_invalid_token">invalid access token</option>
-                                        <option value="request_expired_token">expired access token</option>
-                                    </optgroup>
-                                </select>
-                                <span className="help-block small">
-                                    Force the server to throw certain type of error (useful for manual testing).
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    { launch.launch_type !== "backend-service" &&
-                    <div className="form-group">
-                        <div style={{ borderBottom: "1px solid #EEE" }}>
-                            <label className="text-primary">Misc. Options</label>
-                        </div>
-                        { (launch.launch_type === "provider-ehr" || launch.launch_type === "patient-portal") &&
-                            <div className="checkbox">
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="sim_ehr"
-                                        value="1"
-                                        checked={ launch.sim_ehr }
-                                        onChange={ e => setQuery({ sim_ehr: e.target.checked }) }
-                                    /> Simulate launch within the EHR UI <span className="text-muted small">
-                                        (launch within an iFrame)
-                                    </span>
-                                </label>
-                            </div>
-                        }
-                        { launch.launch_type !== "provider-ehr" && (
-                            <div className="checkbox">
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="skip_login"
-                                        value="1"
-                                        disabled={ 
-                                            (launch.launch_type === "patient-portal"      && (launch.patient  || "").split(",").filter(Boolean).length !== 1) ||
-                                            (launch.launch_type === "provider-standalone" && (launch.provider || "").split(",").filter(Boolean).length !== 1)
-                                        }
-                                        checked={ launch.skip_login }
-                                        onChange={ e => setQuery({ skip_login: e.target.checked }) }
-                                    /> Skip login screen <span className="text-muted small">
-                                        (will launch as if the selected user had logged in)
-                                    </span>
-                                </label>
-                            </div>
-                        )}
-                        { launch.launch_type !== "provider-ehr" && (
-                            <div className="checkbox">
-                                <label>
-                                    <input
-                                        type="checkbox"
-                                        name="skip_auth"
-                                        value="1"
-                                        checked={ launch.skip_auth }
-                                        onChange={ e => setQuery({ skip_auth: e.target.checked }) }
-                                    /> Skip authorization screen <span className="text-muted small">
-                                        (assume the user approved the app launch)
-                                    </span>
-                                </label>
-                            </div>
-                        )}
-                    </div>}
-                </div>
-                { launch.launch_type !== "backend-service" ? 
-                    <div className="col-sm-6">
+                    { launch.launch_type !== "patient-portal" && launch.launch_type !== "patient-standalone" && (
                         <div className="form-group">
-                            <label htmlFor="patient" className="text-primary">Patient(s)</label>
-                            <PatientInput
-                                onChange={list => setQuery({ patient: list })}
-                                value={ launch.patient }
-                                fhirVersion={ query.fhir_version as any }
+                            <label htmlFor="provider" className="text-primary">Provider(s)</label>
+                            <UserPicker
+                                fhirServerBaseUrl={fhirServerBaseUrl}
+                                onChange={ list => setQuery({ provider: list }) }
+                                value={ launch.provider }
                                 inputProps={{
-                                    name: "patient",
-                                    id  : "patient",
-                                    placeholder: "Patient ID(s)"
+                                    name        : "provider",
+                                    id          : "provider",
+                                    placeholder : "Provider ID(s)",
+                                    autoComplete: "off"
                                 }}
                             />
                             <span className="help-block small">
-                                Simulates the active patient in EHR when app is launched. If
-                                no Patient ID is entered or if multiple comma delimited IDs
-                                are specified, a patient picker will be displayed as part of
+                                Simulates user who is launching the app. If no provider is
+                                selected, or if multiple comma delimited Practitioner IDs
+                                are specified, a login screen will be displayed as part of
                                 the launch flow.
                             </span>
                         </div>
+                    )}
 
-                        { launch.launch_type !== "patient-portal" && launch.launch_type !== "patient-standalone" && (
-                            <div className="form-group">
-                                <label htmlFor="provider" className="text-primary">Provider(s)</label>
-                                <UserPicker
-                                    fhirServerBaseUrl={fhirServerBaseUrl}
-                                    onChange={ list => setQuery({ provider: list }) }
-                                    value={ launch.provider }
-                                    inputProps={{
-                                        name        : "provider",
-                                        id          : "provider",
-                                        placeholder : "Provider ID(s)",
-                                        autoComplete: "off"
-                                    }}
-                                />
-                                <span className="help-block small">
-                                    Simulates user who is launching the app. If no provider is
-                                    selected, or if multiple comma delimited Practitioner IDs
-                                    are specified, a login screen will be displayed as part of
-                                    the launch flow.
-                                </span>
-                            </div>
-                        )}
-
-                        <div className="form-group">
-                            <label htmlFor="encounter" className="text-primary">Encounter</label>
-                            <select
-                                name="encounter"
-                                id="encounter"
-                                className="form-control"
-                                value={ launch.encounter }
-                                onChange={ e => setQuery({ encounter: e.target.value }) }
-                            >
-                                <option value="AUTO">Select the most recent encounter if available</option>
-                                <option value="MANUAL">Manually select an encounter if available</option>
-                            </select>
-                            <span className="help-block small">
-                                How to select the current Encounter
-                            </span>
-                        </div>
-                    </div> : null }
-            </div>
-        </>
+                    <div className="form-group">
+                        <label htmlFor="encounter" className="text-primary">Encounter</label>
+                        <select
+                            name="encounter"
+                            id="encounter"
+                            className="form-control"
+                            value={ launch.encounter }
+                            onChange={ e => setQuery({ encounter: e.target.value }) }
+                        >
+                            <option value="AUTO">Select the most recent encounter if available</option>
+                            <option value="MANUAL">Manually select an encounter if available</option>
+                        </select>
+                        <span className="help-block small">
+                            How to select the current Encounter
+                        </span>
+                    </div>
+                </div> : null }
+        </div>
     )
 }
 
