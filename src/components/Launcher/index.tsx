@@ -660,53 +660,61 @@ function ValidationTab() {
             <div className="form-group radio text-muted mb-2" style={{ border: "1px solid #EEE" ,padding: "10px 15px", borderRadius: 5 }}>   
                 <div>
                     <label>
-                        <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} />  Your app can use any <code>client_id</code>
+                        <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                        app can use any <code>client_id</code>
                     </label>
                 </div>
                 <div>
                     <label>
-                        <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} />  Your app can request any { launch.launch_type === "backend-service" ? <b>system</b> : "" } <code>scope</code>
+                        <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                        app can request any { launch.launch_type === "backend-service" ? <b>system</b> : "" } <code>scope</code>
                     </label>
                 </div>
                 { launch.launch_type !== "backend-service" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} />  Your app can use any <code>redirect_uri</code>
+                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            app can use any <code>redirect_uri</code>
                         </label>
                     </div>
                 )}
                 { (launch.launch_type === "backend-service" || launch.client_type === "confidential-asymmetric") && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your app can use any structurally valid JWT assertion
+                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            app can use any structurally valid JWT assertion
                         </label>
                     </div>
                 )}
-                { launch.client_type === "confidential-symmetric" && (
+                { launch.launch_type !== "backend-service" && launch.client_type === "confidential-symmetric" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your app can use any <code>client_secret</code>
+                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            app can use any <code>client_secret</code>
                         </label>
                     </div>
                 )}
                 { launch.launch_type !== "backend-service" && launch.pkce === "none" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} />  Your app is not required to use PKCE
+                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            app is not required to use PKCE
                         </label>
                     </div>
                 )}
                 { launch.launch_type !== "backend-service" && launch.pkce === "auto" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} />  PKCE is validated if <code>code_challenge_method</code> parameter is sent
+                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> PKCE
+                            is validated if <code>code_challenge_method</code> parameter is sent
                         </label>
                     </div>
                 )}
                 { launch.launch_type !== "backend-service" && launch.pkce === "always" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} />  Your app is required to use valid PKCE
+                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            app is required to use valid PKCE
                         </label>
                     </div> 
                 )}
