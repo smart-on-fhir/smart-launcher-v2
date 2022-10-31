@@ -17,6 +17,9 @@ export default function SampleAppLaunch() {
             clientId: launch.client_id || "whatever",
             redirectUri: "/sample-app",
             scope: "patient/*.* user/*.* launch launch/patient launch/encounter openid fhirUser profile offline_access",
+
+            // We might be within the EHR frame
+            completeInTarget: true,
             
             clientSecret: launch.client_type === "confidential-symmetric" ?
                 launch.client_secret || undefined :

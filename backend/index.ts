@@ -7,8 +7,8 @@ import config                 from "./config"
 import fhirServer             from "./routes/fhir"
 import authServer             from "./routes/auth"
 import launcher               from "./routes/launcher"
-import { bool }               from "./lib"
 import { globalErrorHandler } from "./middlewares"
+import { AddressInfo } from "net"
 
 
 const app = express()
@@ -82,8 +82,9 @@ app.use(globalErrorHandler)
 // Start the server if ran directly (tests import it and start it manually)
 /* istanbul ignore if */
 if (require.main?.filename === __filename) {
-    app.listen(+config.port, config.host, () => {
-        console.log(`SMART launcher listening on port ${config.port}!`)
+    const server = app.listen(+config.port, config.host, () => {
+        const address = server.address() as AddressInfo
+        console.log(`SMART launcher available at http://${address.address}:${address.port}`)
     });
 
     if (process.env.SSL_PORT) {
@@ -98,7 +99,8 @@ if (require.main?.filename === __filename) {
                 key : keys.serviceKey,
                 cert: keys.certificate
             }, app).listen(process.env.SSL_PORT, config.host, () => {
-                console.log(`SMART launcher listening on port ${process.env.SSL_PORT}!`)
+                const address = server.address() as AddressInfo
+                console.log(`SMART launcher available at https://${address.address}:${address.port}`)
             });
         });
     }

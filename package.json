@@ -2,6 +2,9 @@
   "name": "smart-launcher",
   "version": "2.0.0",
   "private": true,
+  "engines": {
+    "node": ">=16"
+  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.3.0",
@@ -40,7 +43,8 @@
     "start:server": "PORT=8445 ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts -- --trace-uncaught --trace-warnings --unhandled-rejections=strict",
     "start:server:watch": "nodemon -e ts -x 'npm run start:server'",
     "test:server": "nyc --reporter=lcov mocha -r dotenv/config --exit -t 5000",
-    "test:server:watch": "nodemon -e ts -x 'npm run test:server'"
+    "test:server:watch": "nodemon -e ts -x 'npm run test:server'",
+    "cert": "openssl genrsa -out private-key.pem 2048 && openssl rsa -in private-key.pem -outform PEM -pubout -out public-key.pem"
   },
   "proxy": "http://localhost:8445",
   "eslintConfig": {

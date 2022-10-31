@@ -6,9 +6,9 @@ const { env } = process
 export default {
 
     /**
-     * The port to listen on. If not set defaults to 8443
+     * The port to listen on. If not set defaults to system-allocated port
      */
-    port: env.LAUNCHER_PORT || env.PORT || 8444,
+    port: env.PORT || 0,
 
     /**
      * The host to listen on. If not set defaults to "localhost"
@@ -23,17 +23,17 @@ export default {
     /**
      * The base URL of the R2 FHIR server (if any)
      */
-    fhirServerR2: env.FHIR_SERVER_R2 || "",
+    fhirServerR2: env.FHIR_SERVER_R2 ?? "https://r2.smarthealthit.org",
     
     /**
      * The base URL of the R3 FHIR server (if any)
      */
-    fhirServerR3: env.FHIR_SERVER_R3 || "",
+    fhirServerR3: env.FHIR_SERVER_R3 ?? "https://r3.smarthealthit.org",
     
     /**
      * The base URL of the R4 FHIR server (if any)
      */
-    fhirServerR4: env.FHIR_SERVER_R4 || "",
+    fhirServerR4: env.FHIR_SERVER_R4 ?? "https://r4.smarthealthit.org",
     
     /**
      * Default access token lifetime in minutes
