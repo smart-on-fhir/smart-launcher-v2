@@ -23,12 +23,17 @@ export default function App() {
             // @ts-ignore
             window.dataLayer = window.dataLayer || [];
             // @ts-ignore
-            window.dataLayer.push(['js', new Date()], ['config', window.ENV.GOOGLE_ANALYTICS_ID])
-            // window.gtag = function(){
-            //     dataLayer.push(arguments);
-            // }
-            // gtag('js', new Date()); 
-            // gtag('config', ENV.GOOGLE_ANALYTICS_ID);
+            // window.dataLayer.push(['js', new Date()], ['config', window.ENV.GOOGLE_ANALYTICS_ID])
+            
+            // @ts-ignore
+            window.gtag = function() {
+                // @ts-ignore
+                window.dataLayer.push(arguments);
+            };
+            // @ts-ignore
+            window.gtag('js', new Date()); 
+            // @ts-ignore
+            window.gtag('config', window.ENV.GOOGLE_ANALYTICS_ID);
             // console.log("here")
         }
     })
