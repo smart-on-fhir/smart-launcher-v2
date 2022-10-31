@@ -18,6 +18,22 @@ app.use(cors({ origin: true, credentials: true }))
 
 app.use(express.static(Path.join(__dirname, '../build/')));
 
+app.get("/smart-style.json", (req, res) => {
+    res.json({
+        color_background    : "#edeae3",
+        color_error         : "#9e2d2d",
+        color_highlight     : "#69b5ce",
+        color_modal_backdrop: "",
+        color_success       : "#498e49",
+        color_text          : "#303030",
+        dim_border_radius   : "6px",
+        dim_font_size       : "13px",
+        dim_spacing_size    : "20px",
+        font_family_body    : "Georgia, Times, 'Times New Roman', serif",
+        font_family_heading : "'HelveticaNeue-Light', Helvetica, Arial, 'Lucida Grande', sans-serif;"
+    })
+})
+
 // Auth server
 app.use(["/v/:fhir_release/sim/:sim/auth", "/v/:fhir_release/auth"], authServer)
 

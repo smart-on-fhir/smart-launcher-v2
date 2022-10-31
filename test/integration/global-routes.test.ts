@@ -61,6 +61,14 @@ it ("/env.js", async () => {
     expect(body).to.match(/var ENV = \{/)
 })
 
+it ("/smart-style.json", async () => {
+    const res = await fetch(LAUNCHER.baseUrl + '/smart-style.json')
+    expect(res.headers.get('Content-Type')).to.match(/\bjson\b/)
+    expect(res.status).to.equal(200)
+    const body = await res.text()
+    expect(body).to.match(/"color_background":\s*"#edeae3"/)
+})
+
 // it ("rejects xml", async () => {
 //     const res = await fetch(LAUNCHER.baseUrl + "/", {
 //         headers: {
