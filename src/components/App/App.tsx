@@ -27,12 +27,12 @@ export default function App() {
             s.async = true
             s.src = "https://www.googletagmanager.com/gtag/js?id=" + GOOGLE_ANALYTICS_ID
             document.body.appendChild(s)
-            dataLayer = dataLayer || [];
-            gtag = function() {
-                dataLayer.push(arguments);
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function() {
+                window.dataLayer.push(arguments);
             };
-            gtag('js', new Date()); 
-            gtag('config', window.ENV.GOOGLE_ANALYTICS_ID);
+            window.gtag('js', new Date()); 
+            window.gtag('config', window.ENV.GOOGLE_ANALYTICS_ID);
         }
     })
 
