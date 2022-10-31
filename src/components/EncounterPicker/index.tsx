@@ -248,7 +248,7 @@ export default function EncounterPicker() {
         const { signal } = abortController
 
         Promise.all([
-            fetchEncounters(baseUrl, patient, signal, pageSize).then(encounters => {
+            fetchEncounters(baseUrl, patient, signal, pageSize)/*.then(encounters => {
                 if (searchParams.get("select_first") === "true") {
                     const id = encounters.entry?.[0]?.resource?.id
                     if (id) {
@@ -257,7 +257,7 @@ export default function EncounterPicker() {
                     }
                 }
                 return encounters
-            }),
+            })*/,
             patientData || fetchPatient(baseUrl, patient, signal)
         ])
         .then(([encounters, patient]) => {

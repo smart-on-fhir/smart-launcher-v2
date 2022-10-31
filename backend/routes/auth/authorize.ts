@@ -1,10 +1,13 @@
 import jwt                   from "jsonwebtoken"
 import { Request, Response } from "express"
+import { fetch }             from "cross-fetch"
+import { Encounter, Bundle } from "fhir/r4"
 import { SMART }             from "../../.."
 import LaunchOptions         from "../../../src/isomorphic/LaunchOptions"
 import ScopeSet              from "../../../src/isomorphic/ScopeSet"
 import config                from "../../config"
 import {
+    getFhirServerBaseUrl,
     getRequestBaseURL,
     humanizeArray,
     requireUrlencodedPost
@@ -276,10 +279,28 @@ export default class AuthorizeHandler {
     }
     
     public renderEncounterPicker(): void {
-        this.redirect("/select-encounter", {
-            patient: this.launchOptions.patient.toString(),
-            select_first: this.launchOptions.encounter === "AUTO"
-        });
+        
+        // Select the first encounter and go back to authorize
+        if (this.launchOptions.encounter === "AUTO") {
+            this.getFirstEncounterId().then(
+                id => {
+                    this.launchOptions.encounter = id || ""
+                    this.authorize()
+                }
+            )
+            .catch(() => {
+                this.response.status(400)
+                this.response.json({
+                    error: "invalid_request",
+                    error_description: "Failed to auto-select the first encounter for " +
+                        `patient with id of '${this.launchOptions.patient.get(0)}'`
+                })
+            })
+        } else {
+            this.redirect("/select-encounter", {
+                patient: this.launchOptions.patient.toString()
+            });
+        }
     }
     
     public renderPatientPicker(): void {
@@ -309,16 +330,12 @@ export default class AuthorizeHandler {
                 need_patient_banner: !launchOptions.sim_ehr,
                 smart_style_url: this.baseUrl + "/smart-style.json",
             },
-            client_id: params.client_id,
+            client_id   : params.client_id,
             redirect_uri: params.redirect_uri + "",
-            scope: params.scope,
-
-            // sde: sim.sde,
-
-            // Pass these to the token endpoint via the client_id token
-            pkce: launchOptions.pkce,
+            scope       : params.scope,
+            pkce        : launchOptions.pkce,
             client_type : launchOptions.client_type,
-            nonce: params.nonce
+            nonce       : params.nonce
         };
 
         // Add client_secret to the client token (to be used later)
@@ -564,5 +581,20 @@ export default class AuthorizeHandler {
             RedirectURL.searchParams.set("state", params.state);
         }
         this.response.redirect(RedirectURL.href);
+    }
+
+    private async getFirstEncounterId(): Promise<string | undefined> {
+        const fhirServer = getFhirServerBaseUrl(this.request as any);
+        const url = new URL(`/Encounter/?_count=1&_sort:desc=date`, fhirServer)
+        url.searchParams.set("patient", this.launchOptions.patient.get(0)!)
+        const res = await fetch(url)
+        const txt = await res.text()
+        if (!res.ok) {
+            let msg = txt
+            try { msg = JSON.stringify(JSON.parse(txt), null, 4) } catch {}
+            throw new Error(msg)
+        }
+        const bundle: Bundle<Encounter> = JSON.parse(txt)
+        return bundle.entry?.[0]?.resource?.id
     }
 }

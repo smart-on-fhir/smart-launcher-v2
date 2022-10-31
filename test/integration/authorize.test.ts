@@ -1,6 +1,10 @@
-import { expect }                    from "chai"
-import { LAUNCHER, FHIR_VERSIONS }   from "../TestContext"
-import { launch, parseResponseCode } from "../lib"
+import { expect }                  from "chai"
+import { LAUNCHER, FHIR_VERSIONS } from "../TestContext"
+import {
+    expectOauthError,
+    launch,
+    parseResponseCode
+} from "../lib"
 
 
 FHIR_VERSIONS.forEach(([fhirVersion]) => {
@@ -830,7 +834,12 @@ FHIR_VERSIONS.forEach(([fhirVersion]) => {
                     
                     it (`redirects to encounter picker if needed`, async () => {
                         const res = await launch({
-                            launchParams  : { launch_type: "patient-portal", patient: "p1", skip_login: true },
+                            launchParams  : {
+                                launch_type: "patient-portal",
+                                patient: "p1",
+                                skip_login: true,
+                                encounter: "MANUAL"
+                            },
                             scope         : "launch/patient launch/encounter",
                             redirect_uri  : "http://localhost",
                             response_type : "code",
@@ -841,6 +850,58 @@ FHIR_VERSIONS.forEach(([fhirVersion]) => {
                         expect(res.status).to.equal(302)
                         const redirectUrl = new URL(res.headers.get("location") || "")
                         expect(redirectUrl.pathname).to.equal("/select-encounter")
+                    });
+
+                    it (`can auto-select the first encounter`, async () => {
+                        const server = FHIR_VERSIONS.find(arr => arr[0] === fhirVersion)![1];
+                        server.mock("/Encounter/", {
+                            body: {
+                                entry: [
+                                    { resource: { id: "e1" } },
+                                    { resource: { id: "e2" } }
+                                ]
+                            }
+                        })
+                        const res = await launch({
+                            launchParams  : {
+                                launch_type: "patient-portal",
+                                patient: "p1",
+                                skip_login: true,
+                                skip_auth: true,
+                                encounter: "AUTO"
+                            },
+                            scope         : "launch/patient launch/encounter",
+                            redirect_uri  : "http://localhost",
+                            response_type : "code",
+                            requestOptions: { method },
+                            fhirVersion
+                        })
+                        expect(res.ok).to.equal(false)
+                        expect(res.status).to.equal(302)
+                        const redirectUrl = new URL(res.headers.get("location") || "")
+                        const code = parseResponseCode(redirectUrl.searchParams.get("code") || "")
+                        expect(code.context.encounter).to.equal("e1")
+                    });
+
+                    it (`throws if auto-selecting the first encounter fails`, async () => {
+                        const server = FHIR_VERSIONS.find(arr => arr[0] === fhirVersion)![1];
+                        server.mock("/Encounter/", { status: 404, body: "Not Found" })
+                        const res = await launch({
+                            launchParams  : {
+                                launch_type: "patient-portal",
+                                patient: "p1",
+                                skip_login: true,
+                                skip_auth: true,
+                                encounter: "AUTO"
+                            },
+                            scope         : "launch/patient launch/encounter",
+                            redirect_uri  : "http://localhost",
+                            response_type : "code",
+                            requestOptions: { method },
+                            fhirVersion
+                        })
+
+                        expectOauthError(res, 400, "invalid_request", "Failed to auto-select the first encounter for patient with id of 'p1'")
                     });
                 })
 
@@ -964,7 +1025,12 @@ FHIR_VERSIONS.forEach(([fhirVersion]) => {
 
                     it ("redirects to encounter picker if needed", async () => {
                         const res = await launch({
-                            launchParams  : { launch_type: "provider-standalone", patient: "p1", skip_login: true },
+                            launchParams  : {
+                                launch_type: "provider-standalone",
+                                patient: "p1",
+                                skip_login: true,
+                                encounter: "MANUAL"
+                            },
                             scope         : "launch/patient launch/encounter",
                             redirect_uri  : "http://localhost",
                             response_type : "code",
@@ -994,6 +1060,58 @@ FHIR_VERSIONS.forEach(([fhirVersion]) => {
                         expect(redirectUrl.searchParams.get("error_description") || "").to.equal("")
                         expect(redirectUrl.pathname).not.to.equal("/select-encounter")
                     })
+
+                    it (`can auto-select the first encounter`, async () => {
+                        const server = FHIR_VERSIONS.find(arr => arr[0] === fhirVersion)![1];
+                        server.mock("/Encounter/", {
+                            body: {
+                                entry: [
+                                    { resource: { id: "e1" } },
+                                    { resource: { id: "e2" } }
+                                ]
+                            }
+                        })
+                        const res = await launch({
+                            launchParams  : {
+                                launch_type: "provider-standalone",
+                                patient: "p1",
+                                skip_login: true,
+                                skip_auth: true,
+                                encounter: "AUTO"
+                            },
+                            scope         : "launch/patient launch/encounter",
+                            redirect_uri  : "http://localhost",
+                            response_type : "code",
+                            requestOptions: { method },
+                            fhirVersion
+                        })
+                        expect(res.ok).to.equal(false)
+                        expect(res.status).to.equal(302)
+                        const redirectUrl = new URL(res.headers.get("location") || "")
+                        const code = parseResponseCode(redirectUrl.searchParams.get("code") || "")
+                        expect(code.context.encounter).to.equal("e1")
+                    });
+
+                    it (`throws if auto-selecting the first encounter fails`, async () => {
+                        const server = FHIR_VERSIONS.find(arr => arr[0] === fhirVersion)![1];
+                        server.mock("/Encounter/", { status: 404, body: "Not Found" })
+                        const res = await launch({
+                            launchParams  : {
+                                launch_type: "provider-standalone",
+                                patient: "p1",
+                                skip_login: true,
+                                skip_auth: true,
+                                encounter: "AUTO"
+                            },
+                            scope         : "launch/patient launch/encounter",
+                            redirect_uri  : "http://localhost",
+                            response_type : "code",
+                            requestOptions: { method },
+                            fhirVersion
+                        })
+
+                        expectOauthError(res, 400, "invalid_request", "Failed to auto-select the first encounter for patient with id of 'p1'")
+                    });
                 })
 
                 describe("patient-standalone launch", () => {
