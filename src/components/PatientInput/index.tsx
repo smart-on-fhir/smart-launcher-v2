@@ -5,9 +5,8 @@ declare global {
     var ENV: {
         NODE_ENV                : string
         PICKER_ORIGIN           : string
-        DISABLE_BACKEND_SERVICES: boolean
         GOOGLE_ANALYTICS_ID     : string
-        CDS_SANDBOX_URL         : string
+        
         FHIR_SERVER_R2          : string
         FHIR_SERVER_R3          : string
         FHIR_SERVER_R4          : string

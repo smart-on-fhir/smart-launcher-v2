@@ -62,16 +62,12 @@ app.get("/public_key", (_, res) => {
 // Provide some env variables to the frontend
 app.use("/env.js", (_, res) => {
     const out = {
-        NODE_ENV                : process.env.NODE_ENV      || "production",
-        PICKER_ORIGIN           : process.env.PICKER_ORIGIN || "https://patient-browser.smarthealthit.org",
-        
-        DISABLE_BACKEND_SERVICES: bool(process.env.DISABLE_BACKEND_SERVICES),
-        GOOGLE_ANALYTICS_ID     : process.env.GOOGLE_ANALYTICS_ID,
-        CDS_SANDBOX_URL         : process.env.CDS_SANDBOX_URL,
-        
-        FHIR_SERVER_R2          : process.env.FHIR_SERVER_R2 || "",
-        FHIR_SERVER_R3          : process.env.FHIR_SERVER_R3 || "",
-        FHIR_SERVER_R4          : process.env.FHIR_SERVER_R4 || "",
+        NODE_ENV           : process.env.NODE_ENV      || "production",
+        PICKER_ORIGIN      : process.env.PICKER_ORIGIN || "://patient-browser.smarthealthit.org",
+        GOOGLE_ANALYTICS_ID: process.env.GOOGLE_ANALYTICS_ID,
+        FHIR_SERVER_R2     : config.fhirServerR2,
+        FHIR_SERVER_R3     : config.fhirServerR3,
+        FHIR_SERVER_R4     : config.fhirServerR4,
     };
 
     res.type("application/javascript").send(`var ENV = ${JSON.stringify(out, null, 4)};`);

@@ -264,21 +264,6 @@ export default class TokenHandler {
             throw new InvalidRequestError('Could not decode the "client_assertion" parameter').status(401)
         }
 
-        // if (client.validation === 1) {
-        //     if (!client.client_id) {
-        //         throw new InvalidClientError("The client has no client_id defined").status(401)
-        //     }
-
-        //     if (!client.scope) {
-        //         throw new InvalidClientError("The client has no scopes allowed").status(401)
-        //     }
-
-        //     if (!client.jwks && !client.jwks_url) {
-        //         throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`).status(401)
-        //     }
-        // }
-
-
         // Check required token claims and headers -----------------------------
         if (!token.iss) { // client_id
             throw new InvalidClientError("Missing token 'iss' claim").status(401)
@@ -336,70 +321,63 @@ export default class TokenHandler {
             ).status(401)
         }
 
-        
-
         // If neither jwks nor jwks_uri is set in "App Registration Options",
         // disable client authn checks. Just make sure a well-formed JWS is
         // present in the client assertion, and consider it "valid" if so.
         // (This is similar to how we disable client authn checks for symmetric
         // authn, if no client secret is set in app registration.)
         if (!client.jwks_url && !client.jwks) {
-            // if (client.validation === 1) {
-            //     throw new InvalidClientError(`The client has neither jwks_url nor jwks defined`)
-            // }
             return;
         }
 
-        // if (client.validation === 1) {
-            // Build a set of "allowed keys" as the union of all keys in jwks and
-            // all keys in jwks_uri
-            // ---------------------------------------------------------------------
-            const unionJWKS: { keys: any[] } = { keys: [] };
+        // Build a set of "allowed keys" as the union of all keys in jwks and
+        // all keys in jwks_uri
+        // ---------------------------------------------------------------------
+        const unionJWKS: { keys: any[] } = { keys: [] };
 
-            if (client.jwks_url) {
-                let jwks = await this.fetchJwks(client.jwks_url);
-                // jwks.keys = removeDuplicateKeys(jwks.keys);
-                this.validateJwks(jwks)
-                unionJWKS.keys.push(...jwks.keys)
-            }
+        if (client.jwks_url) {
+            let jwks = await this.fetchJwks(client.jwks_url);
+            // jwks.keys = removeDuplicateKeys(jwks.keys);
+            this.validateJwks(jwks)
+            unionJWKS.keys.push(...jwks.keys)
+        }
 
-            if (client.jwks) {
-                let jwks;
-                if (typeof client.jwks === "string") {
-                    try {
-                        jwks = JSON.parse(client.jwks)
-                    } catch {
-                        throw new InvalidClientError("Invalid JWKS json").status(401)
-                    }
-                } else {
-                    jwks = client.jwks
+        if (client.jwks) {
+            let jwks;
+            if (typeof client.jwks === "string") {
+                try {
+                    jwks = JSON.parse(client.jwks)
+                } catch {
+                    throw new InvalidClientError("Invalid JWKS json").status(401)
                 }
-                // jwks.keys = removeDuplicateKeys(jwks.keys);
-                this.validateJwks(jwks)
-                unionJWKS.keys.push(...jwks.keys)
+            } else {
+                jwks = client.jwks
             }
+            // jwks.keys = removeDuplicateKeys(jwks.keys);
+            this.validateJwks(jwks)
+            unionJWKS.keys.push(...jwks.keys)
+        }
 
-            // Check whether the JWS is valid and signed with one of the allowed keys
-            // ---------------------------------------------------------------------
-            const key = await this.pickPublicKey(unionJWKS.keys, jwtHeaders.kid, jwtHeaders.alg)
+        // Check whether the JWS is valid and signed with one of the allowed keys
+        // ---------------------------------------------------------------------
+        const key = await this.pickPublicKey(unionJWKS.keys, jwtHeaders.kid, jwtHeaders.alg)
 
-            try {
-                jwt.verify(clientAssertion, key.toPEM(), { algorithms: config.supportedAlgorithms as jwt.Algorithm[] });
-            } catch (ex) {
-                throw new InvalidClientError("Invalid token. %s", (ex as Error).message).status(401)
-            }
+        try {
+            jwt.verify(clientAssertion, key.toPEM(), { algorithms: config.supportedAlgorithms as jwt.Algorithm[] });
+        } catch (ex) {
+            throw new InvalidClientError("Invalid token. %s", (ex as Error).message).status(401)
+        }
 
-            // If jku is present as a JWS header, check that an identical jwks_uri
-            // was included in "App Registration" options, because
-            // https://hl7.org/fhir/smart-app-launch/client-confidential-asymmetric.html
-            // says: "When present, this SHALL match the JWKS URL value that the
-            // client supplied to the FHIR authorization server at client registration
-            // time."
-            // ---------------------------------------------------------------------
-            if (jwtHeaders.jku && jwtHeaders.jku !== client.jwks_url) {
-                throw new InvalidRequestError("Invalid jku header of the assertion token token. must be '%s'", client.jwks_url).status(401)
-            }
-        // }
+        // If jku is present as a JWS header, check that an identical jwks_uri
+        // was included in "App Registration" options, because
+        // https://hl7.org/fhir/smart-app-launch/client-confidential-asymmetric.html
+        // says: "When present, this SHALL match the JWKS URL value that the
+        // client supplied to the FHIR authorization server at client registration
+        // time."
+        // ---------------------------------------------------------------------
+        if (jwtHeaders.jku && jwtHeaders.jku !== client.jwks_url) {
+            throw new InvalidRequestError("Invalid jku header of the assertion token token. must be '%s'", client.jwks_url).status(401)
+        }
     }
 
     protected async fetchJwks(url: string): Promise<SMART.JWKS> {
@@ -442,12 +420,6 @@ export default class TokenHandler {
             throw new InvalidClientError('No usable keys found').status(401);
         }
 
-        // let _keys = keys.filter(k => Array.isArray(k.key_ops));
-
-        // if (!_keys.length) {
-        //     throw new InvalidClientError('None of the keys found in the JWKS have the key_ops array property').status(401);
-        // }
-
         let _keys = keys.filter(k => k.alg === alg);
 
         if (!_keys.length) {
@@ -468,10 +440,6 @@ export default class TokenHandler {
         if (!_keys.length) {
             throw new InvalidClientError('No usable public keys found in the JWKS').status(401);
         }
-
-        // Filter duplicate keys (by kid)
-        // _keys = removeDuplicateKeys(_keys);
-        // console.log(_keys)
 
         // If more than one key matches, the verification fails.
         if (_keys.length > 1) {
