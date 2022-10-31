@@ -9,9 +9,30 @@ import Login           from "../Login"
 import EHR             from "../EHR"
 import LaunchBS        from "../SampleApp/LaunchBS"
 import "./App.css"
+import { useEffect } from "react"
   
 
 export default function App() {
+
+    useEffect(() => {
+        if (window.ENV.GOOGLE_ANALYTICS_ID && window.ENV.NODE_ENV === "production") {
+            const s = document.createElement("script");
+            s.async = true
+            s.src = "https://www.googletagmanager.com/gtag/js?id=" + window.ENV.GOOGLE_ANALYTICS_ID
+            document.body.appendChild(s)
+            // @ts-ignore
+            window.dataLayer = window.dataLayer || [];
+            // @ts-ignore
+            window.dataLayer.push(['js', new Date()], ['config', window.ENV.GOOGLE_ANALYTICS_ID])
+            // window.gtag = function(){
+            //     dataLayer.push(arguments);
+            // }
+            // gtag('js', new Date()); 
+            // gtag('config', ENV.GOOGLE_ANALYTICS_ID);
+            // console.log("here")
+        }
+    })
+
     return (
         <BrowserRouter>
             <Routes>

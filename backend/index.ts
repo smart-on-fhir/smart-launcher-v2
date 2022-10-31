@@ -63,7 +63,7 @@ app.get("/public_key", (_, res) => {
 app.use("/env.js", (_, res) => {
     const out = {
         NODE_ENV           : process.env.NODE_ENV      || "production",
-        PICKER_ORIGIN      : process.env.PICKER_ORIGIN || "://patient-browser.smarthealthit.org",
+        PICKER_ORIGIN      : process.env.PICKER_ORIGIN || "https://patient-browser.smarthealthit.org",
         GOOGLE_ANALYTICS_ID: process.env.GOOGLE_ANALYTICS_ID,
         FHIR_SERVER_R2     : config.fhirServerR2,
         FHIR_SERVER_R3     : config.fhirServerR3,
