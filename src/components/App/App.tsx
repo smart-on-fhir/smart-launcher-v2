@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { useEffect }   from "react"
 import Launcher        from "../Launcher"
 import PatientPicker   from "../PatientPicker"
 import EncounterPicker from "../EncounterPicker"
@@ -9,32 +10,29 @@ import Login           from "../Login"
 import EHR             from "../EHR"
 import LaunchBS        from "../SampleApp/LaunchBS"
 import "./App.css"
-import { useEffect } from "react"
+
+declare global {
+    var dataLayer: any[]
+    var gtag: (...args: any[]) => any
+}
   
 
 export default function App() {
 
+    const { GOOGLE_ANALYTICS_ID, NODE_ENV } = window.ENV || {};
+
     useEffect(() => {
-        if (window.ENV.GOOGLE_ANALYTICS_ID && window.ENV.NODE_ENV === "production") {
+        if (GOOGLE_ANALYTICS_ID && NODE_ENV === "production") {
             const s = document.createElement("script");
             s.async = true
-            s.src = "https://www.googletagmanager.com/gtag/js?id=" + window.ENV.GOOGLE_ANALYTICS_ID
+            s.src = "https://www.googletagmanager.com/gtag/js?id=" + GOOGLE_ANALYTICS_ID
             document.body.appendChild(s)
-            // @ts-ignore
-            window.dataLayer = window.dataLayer || [];
-            // @ts-ignore
-            // window.dataLayer.push(['js', new Date()], ['config', window.ENV.GOOGLE_ANALYTICS_ID])
-            
-            // @ts-ignore
-            window.gtag = function() {
-                // @ts-ignore
-                window.dataLayer.push(arguments);
+            dataLayer = dataLayer || [];
+            gtag = function() {
+                dataLayer.push(arguments);
             };
-            // @ts-ignore
-            window.gtag('js', new Date()); 
-            // @ts-ignore
-            window.gtag('config', window.ENV.GOOGLE_ANALYTICS_ID);
-            // console.log("here")
+            gtag('js', new Date()); 
+            gtag('config', window.ENV.GOOGLE_ANALYTICS_ID);
         }
     })
 

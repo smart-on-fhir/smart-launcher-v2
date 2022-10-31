@@ -4,6 +4,7 @@
         "fhirclient",
         "getpages",
         "getpagesoffset",
-        "glyphicon"
+        "glyphicon",
+        "gtag"
     ]
 }
