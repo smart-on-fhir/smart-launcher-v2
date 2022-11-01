@@ -57,13 +57,13 @@ To generate new certificates for your ssl server:
 3. Execute `npm run cert`
 Then (re)start the server and it will use the new keys.
 
+## Using Docker
+The launcher is also available as a Docker image. To use that simply run
+```
+docker run -t -p 8080:80 smartonfhir/smart-launcher-2:latest
+```
+and open http://localhost:8080
 
-<!--
-### Using Docker
-```
-docker run -t -p 9009:80 smartonfhir/smart-launcher:latest
-```
--->
 <!--
 docker build -t smartonfhir/smart-launcher:latest .
 docker push smartonfhir/smart-launcher:latest
