@@ -55,7 +55,7 @@ To generate new certificates for your ssl server:
 1. Make sure you have `openssl` (comes pre-installed on Mac)
 2. `cd` to the project root
 3. Execute `npm run cert`
-Then re-start the server and it will use the new keys.
+Then (re)start the server and it will use the new keys.
 
 
 <!--

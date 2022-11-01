@@ -3,17 +3,6 @@ import { HttpError } from "./errors";
 // import { HTTPError, operationOutcome } = from "./lib"
 
 
-// function rejectXml(req, res, next) {
-//     if (
-//         // !req.accepts("json") ||
-//         // (req.headers.accept && req.headers.accept.indexOf("xml") != -1) || 
-//         (req.headers['content-type'] && req.headers['content-type'].indexOf("xml") != -1) ||
-//         /_format=.*xml/i.test(req.url)
-//     ) {
-//         return operationOutcome(res, "XML format is not supported", { httpCode: 400 });
-//     }
-//     next()
-// }
 
 // const handleParseError = function(err, req, res, next) {
 //     if (err instanceof SyntaxError && err.status === 400) {
@@ -36,37 +25,31 @@ import { HttpError } from "./errors";
 //     next();
 // });
 
-/**
- * 
- * @param {string} ipList 
- */
-// function blackList(ipList) {
-//     const list = String(ipList || "").trim().split(/\s*,\s*/);
 
-//     return function(req, res, next) {
-//         if (!list.length) {
-//             return next()
-//         }
+export function ipBlackList(ipList: string) {
+    const list = String(ipList || "").trim().split(/\s*,\s*/);
 
-//         let ip = req.headers["x-forwarded-for"] + "";
-//         if (ip) {
-//             ip = ip.split(",").pop() + "";
-//         }
-//         else {
-//             ip = req.connection.remoteAddress;
-//         }
+    return function(req: Request, res: Response, next: NextFunction) {
+        if (!list.length) {
+            return next()
+        }
 
-//         if (ip && list.indexOf(ip) > -1) {
-//             res.status(403).end(
-//                 `Your IP (${ip}) cannot access this service. ` +
-//                 `To find out more, please contact us at launch@smarthealthit.org.`
-//             );
-//         }
-//         else {
-//             next();
-//         }
-//     }
-// }
+        let ip = req.headers["x-forwarded-for"] + "";
+        if (ip) {
+            ip = ip.split(",").pop() + "";
+        }
+        else {
+            ip = req.socket.remoteAddress || "";
+        }
+
+        if (ip && list.includes(ip)) {
+            res.status(403).end("Forbidden!");
+        }
+        else {
+            next();
+        }
+    }
+}
 
 /**
  * Global error 500 handler

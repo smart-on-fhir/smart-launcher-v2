@@ -1,21 +1,24 @@
-import Path                   from "path"
-import FS                     from "fs"
-import express                from "express"
-import cors                   from "cors"
-import jose                   from "node-jose"
-import jwt                    from "jsonwebtoken"
-import config                 from "./config"
-import fhirServer             from "./routes/fhir"
-import authServer             from "./routes/auth"
-import launcher               from "./routes/launcher"
-import { globalErrorHandler } from "./middlewares"
+import Path            from "path"
+import FS              from "fs"
+import express         from "express"
+import cors            from "cors"
+import jose            from "node-jose"
+import jwt             from "jsonwebtoken"
 import { AddressInfo } from "net"
+import config          from "./config"
+import fhirServer      from "./routes/fhir"
+import authServer      from "./routes/auth"
+import launcher        from "./routes/launcher"
+import { globalErrorHandler, ipBlackList } from "./middlewares"
 
 
 const app = express()
 
 // CORS everywhere :)
 app.use(cors({ origin: true, credentials: true }))
+
+// Block some IPs
+app.use(ipBlackList(process.env.IP_BLACK_LIST || ""));
 
 app.use(express.static(Path.join(__dirname, '../build/')));
 

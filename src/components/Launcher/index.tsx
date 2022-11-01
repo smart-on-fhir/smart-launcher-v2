@@ -190,28 +190,23 @@ export default function Launcher() {
                     <li role="presentation" className={ tab === "0" ? "active" : undefined } onClick={ () => setQuery({ tab: "0" }) }>
                         <b role="tab">App Launch Options</b>
                     </li>
-                    {/* <li role="presentation" className={ tab === "1" ? "active" : undefined } onClick={ () => setQuery({ tab: "1" }) }>
-                        <b role="tab">App Registration Options</b>
-                    </li> */}
-                    <li role="presentation" className={ tab === "2" ? "active" : undefined } onClick={ () => setQuery({ tab: "2" }) }>
+                    <li role="presentation" className={ tab === "1" ? "active" : undefined } onClick={ () => setQuery({ tab: "1" }) }>
                         <b role="tab">Client Registration & Validation</b>
                     </li>
                 </ul>
-                <br/>
                 <form onSubmit={e => e.preventDefault()}>
-                    {/* <button type="submit">Submit</button> */}
+                    <div className="tab-content">
                     { tab === "0" && <LaunchTab /> }
-                    {/* { tab === "1" && <ClientRegistrationTab /> } */}
-                    { tab === "2" && <ValidationTab /> }
+                    { tab === "1" && <ValidationTab /> }
+                    </div>
                     
-                    { validationErrors.length && !(validationErrors.length === 1 && validationErrors[0] === "Missing app launch URL") ?
-                        <div className="text-danger" style={{ background: "#f9f3f4", padding: "5px 15px", borderRadius: 5 }}>
+                    { !!(validationErrors.length && !(validationErrors.length === 1 && validationErrors[0] === "Missing app launch URL")) &&
+                        <div className="text-danger mt-2" style={{ background: "#f9f3f4", padding: "5px 15px", borderRadius: 5 }}>
                             <i className="glyphicon glyphicon-exclamation-sign"/> {validationErrors.join("; ")}
-                        </div> :
-                        <div style={{ padding: "5px 15px" }}>&nbsp;</div>
+                        </div>
                     }
                     <div className="mt-2" style={{ background: "#F3F3F3", padding: "10px 15px", borderRadius: 5 }}>
-                        <h4 className="text-success mt-0">
+                        <h4 className="text-primary mt-0">
                             <i className="glyphicon glyphicon-fire"/> {
                             isStandaloneLaunch || launch_type === "backend-service" ? "Server's FHIR Base URL" : "App's Launch URL"
                         }
@@ -265,7 +260,7 @@ export default function Launcher() {
                     <br/>
                 </form>
                 <hr/>
-                <p className="text-center">
+                <p className="text-center small">
                     Please report any issues you encounter to the <a
                     href="https://groups.google.com/forum/#!forum/smart-on-fhir"
                     rel="noreferrer noopener"
@@ -663,31 +658,35 @@ function ValidationTab() {
 
     function renderInfoWidget() {
         return (
-            <div className="form-group radio text-muted mb-2" style={{ border: "1px solid #EEE" ,padding: "10px 15px", borderRadius: 5 }}>   
+            <div className="form-group radio text-muted mb-0" style={{
+                padding: "10px 15px",
+                background: "#e7f4ff",
+                borderRadius: 5
+            }}>   
                 <div>
                     <label>
-                        <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
-                        app can use any <code>client_id</code>
+                        <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
+                        app can use any <b className="text-primary">client_id</b>
                     </label>
                 </div>
                 <div>
                     <label>
-                        <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
-                        app can request any { launch.launch_type === "backend-service" ? <b>system</b> : "" } <code>scope</code>
+                        <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
+                        app can request any { launch.launch_type === "backend-service" ? <b className="text-primary">system</b> : "" } <b className="text-primary">scope</b>
                     </label>
                 </div>
                 { launch.launch_type !== "backend-service" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
-                            app can use any <code>redirect_uri</code>
+                            <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
+                            app can use any <b className="text-primary">redirect_uri</b>
                         </label>
                     </div>
                 )}
                 { (launch.launch_type === "backend-service" || launch.client_type === "confidential-asymmetric") && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
                             app can use any structurally valid JWT assertion
                         </label>
                     </div>
@@ -695,15 +694,15 @@ function ValidationTab() {
                 { launch.launch_type !== "backend-service" && launch.client_type === "confidential-symmetric" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
-                            app can use any <code>client_secret</code>
+                            <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
+                            app can use any <b className="text-primary">client_secret</b>
                         </label>
                     </div>
                 )}
                 { launch.launch_type !== "backend-service" && launch.pkce === "none" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
                             app is not required to use PKCE
                         </label>
                     </div>
@@ -711,15 +710,15 @@ function ValidationTab() {
                 { launch.launch_type !== "backend-service" && launch.pkce === "auto" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> PKCE
-                            is validated if <code>code_challenge_method</code> parameter is sent
+                            <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> PKCE
+                            is validated if <b className="text-primary">code_challenge_method</b> parameter is sent
                         </label>
                     </div>
                 )}
                 { launch.launch_type !== "backend-service" && launch.pkce === "always" && (
                     <div>
                         <label>
-                            <i className="glyphicon glyphicon-info-sign text-success" style={{ marginLeft: -20 }} /> Your
+                            <i className="fa-regular fa-circle-check text-primary" style={{ marginLeft: -20 }} /> Your
                             app is required to use valid PKCE
                         </label>
                     </div> 
