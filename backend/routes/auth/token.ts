@@ -521,7 +521,7 @@ export default class TokenHandler {
     public createIdToken(clientDetailsToken: SMART.AuthorizationToken): string {
         // let secure = this.request.secure || this.request.headers["x-forwarded-proto"] == "https";
         // let iss    = config.baseUrl.replace(/^https?/, secure ? "https" : "http");
-        let iss = `${this.baseUrl}${this.request.baseUrl}/fhir`
+        let iss = `${this.baseUrl}${this.request.baseUrl.replace(/\/auth.*$/, "/fhir")}`
         let payload = {
             profile: clientDetailsToken.user,
             fhirUser: clientDetailsToken.user,
