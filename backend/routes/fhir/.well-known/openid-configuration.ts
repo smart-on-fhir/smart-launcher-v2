@@ -8,7 +8,11 @@ import { getRequestBaseURL } from "../../../lib"
 export default function getWellKnownOpenidConfig(req: Request, res: Response) {
 
     const baseUrl = getRequestBaseURL(req);
-    const prefix  = `${baseUrl}/v/${req.params.fhir_release}`;
+    
+    let prefix = `${baseUrl}/v/${req.params.fhir_release}`;
+    if (req.params.sim) {
+        prefix += `/sim/${req.params.sim}`;
+    }
     
     const json = {
 
