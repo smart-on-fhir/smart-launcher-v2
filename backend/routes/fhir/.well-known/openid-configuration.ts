@@ -1,4 +1,5 @@
 import { Request, Response } from "express"
+import config                from "../../../config"
 import { getRequestBaseURL } from "../../../lib"
 
 
@@ -50,7 +51,41 @@ export default function getWellKnownOpenidConfig(req: Request, res: Response) {
         // types that this OP supports. Valid types include pairwise and public. 
         subject_types_supported: [
             "public"
-        ]
+        ],
+
+        // REQUIRED. JSON array containing a list of the OAuth 2.0 response_type
+        // values that this OP supports. Dynamic OpenID Providers MUST support
+        // the `code`, `id_token`, and the `token id_token` Response Type values
+        response_types_supported: [ "code", "id_token", "token id_token" ],
+
+        // REQUIRED. JSON array containing a list of the JWS signing algorithms
+        // (alg values) supported by the OP for the ID Token to encode the
+        // Claims in a JWT [JWT]. The algorithm RS256 MUST be included. The value
+        // none MAY be supported, but MUST NOT be used unless the Response Type
+        // used returns no ID Token from the Authorization Endpoint (such as when
+        // using the Authorization Code Flow).
+        id_token_signing_alg_values_supported: config.supportedAlgorithms,
+
+        // "token_endpoint_auth_methods_supported": ["client_secret_basic", "private_key_jwt"],
+        // "token_endpoint_auth_signing_alg_values_supported": ["RS256", "ES256"],
+        // "userinfo_endpoint": "https://server.example.com/connect/userinfo",
+        // "check_session_iframe": "https://server.example.com/connect/check_session",
+        // "end_session_endpoint": "https://server.example.com/connect/end_session",
+        // "registration_endpoint":"https://server.example.com/connect/register",
+        // "scopes_supported":["openid", "profile", "email", "address","phone", "offline_access"],
+        // "acr_values_supported":["urn:mace:incommon:iap:silver","urn:mace:incommon:iap:bronze"],
+        // "userinfo_signing_alg_values_supported":["RS256", "ES256", "HS256"],
+        // "userinfo_encryption_alg_values_supported":["RSA1_5", "A128KW"],
+        // "userinfo_encryption_enc_values_supported":["A128CBC-HS256", "A128GCM"],
+        // "id_token_encryption_alg_values_supported":["RSA1_5", "A128KW"],
+        // "id_token_encryption_enc_values_supported":["A128CBC-HS256", "A128GCM"],
+        // // "request_object_signing_alg_values_supported":["none", "RS256", "ES256"],
+        // // "display_values_supported":["page", "popup"],
+        // // "claim_types_supported":["normal", "distributed"],
+        // "claims_supported":["sub", "iss", "auth_time", "acr","name", "given_name", "family_name", "nickname","profile", "picture", "website","email", "email_verified", "locale", "zoneinfo","http://example.info/claims/groups"],
+        // // "claims_parameter_supported":true,
+        // // "service_documentation":"http://server.example.com/connect/service_documentation.html",
+        // // "ui_locales_supported":["en-US", "en-GB", "en-CA", "fr-FR", "fr-CA"]
 
     };
 

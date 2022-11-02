@@ -76,7 +76,8 @@ export default function getWellKnownSmartConfig(req: Request, res: Response) {
             "code",
             "token", // implicit grant https://datatracker.ietf.org/doc/html/rfc6749#section-4.2.1
         //     "code id_token",
-        //     "id_token",
+            "id_token",
+            "token id_token",
             "refresh_token"
         ],
 
