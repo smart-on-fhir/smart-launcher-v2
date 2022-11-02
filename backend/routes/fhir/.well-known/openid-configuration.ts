@@ -49,9 +49,7 @@ export default function getWellKnownOpenidConfig(req: Request, res: Response) {
 
         // REQUIRED. JSON array containing a list of the Subject Identifier
         // types that this OP supports. Valid types include pairwise and public. 
-        subject_types_supported: [
-            "public"
-        ],
+        subject_types_supported: [ "public" ],
 
         // REQUIRED. JSON array containing a list of the OAuth 2.0 response_type
         // values that this OP supports. Dynamic OpenID Providers MUST support
@@ -66,27 +64,25 @@ export default function getWellKnownOpenidConfig(req: Request, res: Response) {
         // using the Authorization Code Flow).
         id_token_signing_alg_values_supported: config.supportedAlgorithms,
 
-        // "token_endpoint_auth_methods_supported": ["client_secret_basic", "private_key_jwt"],
-        // "token_endpoint_auth_signing_alg_values_supported": ["RS256", "ES256"],
-        // "userinfo_endpoint": "https://server.example.com/connect/userinfo",
-        // "check_session_iframe": "https://server.example.com/connect/check_session",
-        // "end_session_endpoint": "https://server.example.com/connect/end_session",
-        // "registration_endpoint":"https://server.example.com/connect/register",
-        // "scopes_supported":["openid", "profile", "email", "address","phone", "offline_access"],
-        // "acr_values_supported":["urn:mace:incommon:iap:silver","urn:mace:incommon:iap:bronze"],
-        // "userinfo_signing_alg_values_supported":["RS256", "ES256", "HS256"],
-        // "userinfo_encryption_alg_values_supported":["RSA1_5", "A128KW"],
-        // "userinfo_encryption_enc_values_supported":["A128CBC-HS256", "A128GCM"],
-        // "id_token_encryption_alg_values_supported":["RSA1_5", "A128KW"],
-        // "id_token_encryption_enc_values_supported":["A128CBC-HS256", "A128GCM"],
-        // // "request_object_signing_alg_values_supported":["none", "RS256", "ES256"],
-        // // "display_values_supported":["page", "popup"],
-        // // "claim_types_supported":["normal", "distributed"],
-        // "claims_supported":["sub", "iss", "auth_time", "acr","name", "given_name", "family_name", "nickname","profile", "picture", "website","email", "email_verified", "locale", "zoneinfo","http://example.info/claims/groups"],
-        // // "claims_parameter_supported":true,
-        // // "service_documentation":"http://server.example.com/connect/service_documentation.html",
-        // // "ui_locales_supported":["en-US", "en-GB", "en-CA", "fr-FR", "fr-CA"]
+        // OPTIONAL. JSON array containing a list of Client Authentication methods
+        // supported by this Token Endpoint. The options are `client_secret_post`,
+        // `client_secret_basic`, `client_secret_jwt`, and `private_key_jwt`, as
+        // described in Section 9 of OpenID Connect Core 1.0 [OpenID.Core]. Other
+        // authentication methods MAY be defined by extensions. If omitted, the
+        // default is `client_secret_basic` -- the HTTP Basic Authentication
+        // Scheme specified in Section 2.3.1 of OAuth 2.0 [RFC6749].
+        token_endpoint_auth_methods_supported: [
+            "client_secret_basic", // for confidential apps
+            "client_secret_post",  // for public apps
+            "private_key_jwt"      // for asymmetric auth
+        ],
 
+        // OPTIONAL. JSON array containing a list of the JWS signing algorithms
+        // (alg values) supported by the Token Endpoint for the signature on the
+        // JWT [JWT] used to authenticate the Client at the Token Endpoint for
+        // the private_key_jwt and client_secret_jwt authentication methods.
+        // Servers SHOULD support RS256. The value none MUST NOT be used.
+        token_endpoint_auth_signing_alg_values_supported: config.supportedAlgorithms
     };
 
     res.json(json);
