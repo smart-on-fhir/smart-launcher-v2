@@ -46,8 +46,8 @@ export default (req: Request, res: Response) => {
     const launchOptions = new LaunchOptions({
         launch_type: "provider-ehr",
         sim_ehr    : bool(sim_ehr),
-        patient    : patient  + "",
-        provider   : provider + "",
+        patient    : String(patient || ""),
+        provider   : String(provider || ""),
         auth_error : auth_error as SMART.SimulatedError,
         encounter  : bool(select_encounter) ? "MANUAL" : "AUTO",
         pkce       : "auto",
