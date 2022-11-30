@@ -215,7 +215,7 @@ export default function EncounterPicker() {
     cleanBaseUrl.search = ""
 
     // What happens when we click on encounter
-    function launchApp(id = "-1") {
+    function launchApp(id = "NONE") {
 
         // @ts-ignore We might be in a frame and have to call setEncounterID
         // in the parent window
@@ -328,7 +328,9 @@ export default function EncounterPicker() {
                                 </tr> }
                                 { data && !data.entry?.length && <tr id="message-no-patients" className="no-hover">
                                     <td colSpan={6} style={{ textAlign: "center", padding: 40 }}>
-                                        <b className="text-danger">No encounters found</b>
+                                        <h4 className="text-danger">No encounters found</h4>
+                                        <br />
+                                        <button className="btn btn-primary" onClick={() => launchApp()}>Launch without encounter</button>
                                     </td>
                                 </tr> }
                                 

@@ -201,6 +201,10 @@ export default class AuthorizeHandler {
         
         const { scope, launchOptions: { launch_type, encounter }} = this;
 
+        if (encounter === "NONE") {
+            return false;
+        }
+
         // Already selected
         if (encounter && encounter !== "AUTO" && encounter !== "MANUAL") {
             return false;
@@ -372,7 +376,7 @@ export default class AuthorizeHandler {
         }
 
         // encounter
-        if (launchOptions.encounter) {
+        if (launchOptions.encounter && launchOptions.encounter !== "NONE") {
             if (scope.has("launch") || scope.has("launch/encounter")) {
                 code.context.encounter = launchOptions.encounter;
             }
