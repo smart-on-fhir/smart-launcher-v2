@@ -96,6 +96,12 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
 export function decode(launch: string): SMART.LaunchParams {
     const arr = JSON.parse(base64UrlDecode(launch));
 
+    if (arr && typeof arr === "object" && !Array.isArray(arr)) {
+        const result = decodeLegacy(arr)
+        // console.log(arr, "====>", result)
+        return result
+    }
+
     const launchType = launchTypes[arr[0]];
 
     if (!launchType) {
@@ -121,6 +127,108 @@ export function decode(launch: string): SMART.LaunchParams {
         pkce         : PKCEValidationTypes[arr[15]]
     }
 }
+
+// =============================================================================
+//                            LEGACY PARSING
+// 
+// This is for backwards compatibility with the old launcher, as well as the one
+// at https://smart.argo.run
+// =============================================================================
+
+// Errors used to be resolved by their index in this array
+const SIM_ERRORS = [
+    "auth_invalid_client_id",
+    "auth_invalid_redirect_uri",
+    "auth_invalid_scope",
+    "auth_invalid_client_secret",
+    "token_invalid_token",
+    "token_expired_refresh_token",
+    "request_invalid_token",
+    "request_expired_token"
+];
+
+function decodeLegacy(object: Record<string, string>): SMART.LaunchParams {
+
+    /**
+     * {"h":"1"}       -> provider-standalone
+     * {"a":"1"}       -> provider-ehr
+     * {"a":"1","k":1} -> patient-portal
+     * {"k":"1"}       -> patient-standalone
+     * {"l":"1"}       -> launch_cds (no longer supported)
+     */
+    let launch_type: SMART.LaunchType = "provider-ehr"
+
+    if (object.a === "1") { // launch_ehr
+        launch_type = "provider-ehr"
+    }
+    if (object.k === "1") { // launch_pt
+        launch_type = "patient-standalone"
+    }
+    if (object.a === "1" && object.k === "1") { // launch_ehr + launch_pt
+        launch_type = "patient-portal"
+    }
+    if (object.h === "1") { // launch_prov
+        launch_type = "provider-standalone"
+    }
+    if (object.l === "1") { // launch_cds
+        throw new Error("CDS Hooks launch is not supported")
+    }
+
+    const out = {
+        launch_type,
+        patient      : object.b || "",
+        provider     : object.e || "",
+        encounter    : object.c || object.g === "1" ? "MANUAL" : "AUTO",
+        skip_login   : object.i === "1",
+        skip_auth    : object.j === "1",
+        sim_ehr      : object.f === "1",
+        scope        : "",
+        redirect_uris: "",
+        client_id    : "",
+        client_secret: "",
+        auth_error   : "",
+        jwks_url     : "",
+        jwks         : "",
+        client_type  : "public", // "backend-service"
+        pkce         : "auto"
+    }
+
+    if (object.d && Number.isInteger(+object.d)) { // auth_error
+        out.auth_error = String(SIM_ERRORS[+object.d] || "")
+    }
+
+    // The following is for URLs from https://smart.argo.run
+    // -------------------------------------------------------------------------
+    if (object.m === "1") {
+        out.pkce = "always"
+    }
+    if (object.n === "cc-asym") {
+        out.client_type = "confidential-asymmetric"
+    }
+    if (object.n === "cc-sym") {
+        out.client_type = "confidential-symmetric"
+    }
+    if (object.n === "public") {
+        out.client_type = "public"
+    }
+    if (Array.isArray(object.o)) {
+        out.redirect_uris = object.o.join(",")
+    }
+    if (object.p) {
+        out.client_secret = object.p
+    }
+    if (object.q) {
+        out.jwks_url = object.q
+    }
+    if (object.r) {
+        out.jwks = object.r
+    }
+    // -------------------------------------------------------------------------
+
+    return out as SMART.LaunchParams;
+}
+
+// =============================================================================
 
 /**
  * IMPORTANT: This function will be called in the browser, but also in Node
