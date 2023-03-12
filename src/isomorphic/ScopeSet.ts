@@ -87,7 +87,7 @@ export default class ScopeSet
     public static getInvalidSystemScopes(scopes = ""): string {
         scopes = String(scopes).trim();
         return scopes.split(/\s+/).find(s => !(
-            /^system\/(\*|[A-Z][a-zA-Z]+)(\.(read|write|\*|[cruds]+))?$/.test(s)
+            /^system\/(\*|[A-Z][a-zA-Z]+)(\.(read|write|\*|[cruds]+))?(\?.*)?$/.test(s)
         )) || "";
     }
 
