@@ -43,9 +43,13 @@ export default function introspect(req: Request, res: Response) {
             active       : true,
             refresh_token: undefined,
             id_token     : undefined,
+            code_challenge_method: undefined,
+            code_challenge: undefined,
+            context: undefined,
+            iat: undefined,
             iss          : id_claims.iss,
             sub          : id_claims.sub,
-            fhirUser     : id_claims.fhirUser,
+            ...verified.context
         });
     } catch (err) {
         res.json({ active: false, error: err })

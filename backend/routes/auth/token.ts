@@ -610,7 +610,10 @@ export default class TokenHandler {
             code_challenge       : authorizationToken.code_challenge,
             client_secret        : authorizationToken.client_secret,
             nonce                : authorizationToken.nonce,
-            auth_error           : authorizationToken.auth_error
+            auth_error           : authorizationToken.auth_error,
+            context              : authorizationToken.context,
+            client_id            : authorizationToken.client_id,
+            fhirUser             : tokenResponse.id_token ? authorizationToken.user : undefined
         }, config.jwtSecret, { expiresIn });
 
         // The authorization servers response must include the HTTP
