@@ -49,7 +49,7 @@ export default async function proxy(req: Request, res: Response) {
     }
 
     // Proxy ---------------------------------------------------------------
-    const response = await fetch(new URL(req.url, fhirServer + "").href, fhirRequestOptions);
+    const response = await fetch(new URL(fhirServer + req.url).href, fhirRequestOptions);
 
     res.status(response.status);
 
