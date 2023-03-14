@@ -43,10 +43,11 @@ export function launch({
     }
 
     const launch = encode(launchOptions, ignoreErrors)
+    let url: URL;
 
     // In standalone launch the launch params are in URL segment
     if (launchOptions.launch_type === "patient-standalone" || launchOptions.launch_type === "provider-standalone") {
-        var url = new URL(`/v/${fhirVersion}/sim/${launch}/auth/authorize`, LAUNCHER.baseUrl)
+        url = new URL(`/v/${fhirVersion}/sim/${launch}/auth/authorize`, LAUNCHER.baseUrl)
         if ("aud" in query && query.aud === undefined) {
             searchParams.delete("aud")
         } else {
@@ -56,7 +57,7 @@ export function launch({
     
     // In EHR launch the launch params are in launch query parameter
     else {
-        var url = new URL(`/v/${fhirVersion}/auth/authorize`, LAUNCHER.baseUrl)
+        url = new URL(`/v/${fhirVersion}/auth/authorize`, LAUNCHER.baseUrl)
         searchParams.set("launch", encode(launchOptions, ignoreErrors))
         if ("aud" in query && query.aud === undefined) {
             searchParams.delete("aud")
@@ -81,7 +82,7 @@ export function launch({
 
     // console.log(url.href)
 
-    return fetch(url, { ...requestOptions, redirect: "manual" })
+    return fetch(url.href, { ...requestOptions, redirect: "manual" })
 }
 
 export function getTokenURL({
@@ -139,7 +140,7 @@ export async function fetchAccessToken({
 
     const url = getTokenURL({ sim, fhirVersion })
 
-    return fetch(url, {
+    return fetch(url.href, {
         method: "POST",
         body: formData,
         redirect: "manual",
