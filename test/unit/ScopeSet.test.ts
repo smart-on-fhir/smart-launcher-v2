@@ -75,6 +75,7 @@ describe("ScopeSet", () => {
             expect(ScopeSet.getInvalidSystemScopes("system/Client.read system/Client.*")).to.equal('');
             expect(ScopeSet.getInvalidSystemScopes("system/Client.write system/*")).to.equal('');
             expect(ScopeSet.getInvalidSystemScopes("system/Patient.rs")).to.equal('');
+            expect(ScopeSet.getInvalidSystemScopes("system/Observation.rs?category=laboratory")).to.equal('');
         });
 
         it('with invalid scopes', () => {
@@ -83,6 +84,7 @@ describe("ScopeSet", () => {
             expect(ScopeSet.getInvalidSystemScopes("system/Client.write system/Client.")).to.equal('system/Client.');
             expect(ScopeSet.getInvalidSystemScopes('System/* system/client')).to.equal('System/*');
             expect(ScopeSet.getInvalidSystemScopes("System/* system/Patient.rs")).to.equal('System/*');
+            expect(ScopeSet.getInvalidSystemScopes("System/* system/Observation.rs?category=laboratory")).to.equal('System/*');
         });
 
         it('with empty string', () => {
