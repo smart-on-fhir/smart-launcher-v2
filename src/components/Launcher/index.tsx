@@ -261,6 +261,7 @@ export default function Launcher() {
                 </form>
                 <hr/>
                 <p className="text-center small">
+                    <b>Version: { window.ENV.VERSION }. </b>
                     Please report any issues you encounter to the <a
                     href="https://groups.google.com/forum/#!forum/smart-on-fhir"
                     rel="noreferrer noopener"
