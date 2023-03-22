@@ -34,17 +34,19 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "build": "echo $SOURCE_VERSION > .source_version && react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "start": "if-env NODE_ENV=production && npm run start:prod || npm run start:dev",
     "start:prod": "ts-node --skipProject --transpile-only backend/index.ts",
-    "start:dev": "export SOURCE_VERSION=`cat .source_version` && PORT=8444 react-scripts start",
-    "start:server": "export SOURCE_VERSION=$(cat .source_version) PORT=8445 ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts -- --trace-uncaught --trace-warnings --unhandled-rejections=strict",
+    "start:dev": "PORT=8444 react-scripts start",
+    "start:server": "PORT=8445 ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts -- --trace-uncaught --trace-warnings --unhandled-rejections=strict",
     "start:server:watch": "nodemon -e ts -x 'npm run start:server'",
     "test:server": "nyc --reporter=lcov mocha -r dotenv/config --exit -t 5000",
     "test:server:watch": "nodemon -e ts -x 'npm run test:server'",
-    "cert": "openssl genrsa -out private-key.pem 2048 && openssl rsa -in private-key.pem -outform PEM -pubout -out public-key.pem"
+    "cert": "openssl genrsa -out private-key.pem 2048 && openssl rsa -in private-key.pem -outform PEM -pubout -out public-key.pem",
+    "postinstall": "echo $SOURCE_VERSION > .source_version",
+    "prestart": "export SOURCE_VERSION=`cat .source_version`"
   },
   "proxy": "http://localhost:8445",
   "eslintConfig": {
