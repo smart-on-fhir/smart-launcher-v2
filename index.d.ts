@@ -10,7 +10,7 @@ declare global {
         FHIR_SERVER_R4     : string
         ACCESS_TOKEN       : string
         VERSION            : string
-        REACT_APP_COMMIT   : string
+        COMMIT             : string
     }
 }
 

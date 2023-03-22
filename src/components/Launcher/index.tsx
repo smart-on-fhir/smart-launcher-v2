@@ -274,9 +274,9 @@ export default function Launcher() {
                 <p className="text-center small">
                     <b> Version:</b> { window.ENV.VERSION }
                     <b> Commit:</b> <a
-                    href={ "https://github.com/smart-on-fhir/smart-launcher-v2/commit/" + process.env.REACT_APP_COMMIT }
+                    href={ "https://github.com/smart-on-fhir/smart-launcher-v2/commit/" + process.env.REACT_APP_COMMIT || window.ENV.COMMIT }
                     rel="noreferrer noopener"
-                    target="_blank">{ process.env.REACT_APP_COMMIT }</a>
+                    target="_blank">{ process.env.REACT_APP_COMMIT || window.ENV.COMMIT }</a>
                 </p>
                 <br/>
             </div>
