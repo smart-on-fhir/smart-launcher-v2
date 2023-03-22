@@ -261,7 +261,6 @@ export default function Launcher() {
                 </form>
                 <hr/>
                 <p className="text-center small">
-                    <b>Version: { window.ENV.VERSION }. </b>
                     Please report any issues you encounter to the <a
                     href="https://groups.google.com/forum/#!forum/smart-on-fhir"
                     rel="noreferrer noopener"
@@ -271,6 +270,13 @@ export default function Launcher() {
                     href="https://github.com/smart-on-fhir/smart-launcher-v2/"
                     rel="noreferrer noopener"
                     target="_blank">GitHub</a>.
+                </p>
+                <p className="text-center small">
+                    <b> Version:</b> { window.ENV.VERSION }
+                    <b> Commit:</b> <a
+                    href={ "https://github.com/smart-on-fhir/smart-launcher-v2/commit/" + window.ENV.COMMIT }
+                    rel="noreferrer noopener"
+                    target="_blank">{ window.ENV.COMMIT }</a>
                 </p>
                 <br/>
             </div>

@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken"
 import { NextFunction, Request, Response, RequestHandler } from "express"
 import config from "./config";
 import { HttpError, InvalidRequestError } from "./errors";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 
 /**
@@ -105,4 +107,13 @@ export function humanizeArray(arr: string[], quote = false) {
     
     const last = arr.pop();
     return arr.join(", ") + " and " + last;
+}
+
+export function getGitCommitHash() {
+    const rev = readFileSync(join(__dirname, '../.git/HEAD'), "utf8").trim();
+    if (rev.indexOf(':') === -1) {
+        return rev;
+    } else {
+        return readFileSync(join(__dirname, '../.git/', rev.substring(5)), "utf8").trim();
+    }
 }

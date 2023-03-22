@@ -10,6 +10,7 @@ declare global {
         FHIR_SERVER_R4     : string
         ACCESS_TOKEN       : string
         VERSION            : string
+        COMMIT             : string
     }
 }
 
