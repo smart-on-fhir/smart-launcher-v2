@@ -34,12 +34,12 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "build": "react-scripts build",
+    "build": "REACT_APP_COMMIT=`git rev-parse HEAD` react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "start": "if-env NODE_ENV=production && npm run start:prod || npm run start:dev",
     "start:prod": "ts-node --skipProject --transpile-only backend/index.ts",
-    "start:dev": "PORT=8444 react-scripts start",
+    "start:dev": "PORT=8444 REACT_APP_COMMIT=`git rev-parse HEAD` react-scripts start",
     "start:server": "PORT=8445 ts-node --skipProject --transpile-only -r dotenv/config backend/index.ts -- --trace-uncaught --trace-warnings --unhandled-rejections=strict",
     "start:server:watch": "nodemon -e ts -x 'npm run start:server'",
     "test:server": "nyc --reporter=lcov mocha -r dotenv/config --exit -t 5000",
