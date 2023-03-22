@@ -613,7 +613,9 @@ export default class TokenHandler {
             auth_error           : authorizationToken.auth_error,
             context              : authorizationToken.context,
             client_id            : authorizationToken.client_id,
-            fhirUser             : tokenResponse.id_token ? authorizationToken.user : undefined
+            fhirUser             : tokenResponse.id_token ? authorizationToken.user : undefined,
+            encounter            : authorizationToken.context.encounter,
+            patient              : authorizationToken.context.patient
         }, config.jwtSecret, { expiresIn });
 
         // The authorization servers response must include the HTTP
