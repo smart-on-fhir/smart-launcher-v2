@@ -65,6 +65,6 @@ docker run -t -p 8080:80 smartonfhir/smart-launcher-2:latest
 and open http://localhost:8080
 
 <!--
-docker build -t smartonfhir/smart-launcher:latest .
-docker push smartonfhir/smart-launcher:latest
+docker build -t smartonfhir/smart-launcher-2:latest .
+docker push smartonfhir/smart-launcher-2:latest
 -->
