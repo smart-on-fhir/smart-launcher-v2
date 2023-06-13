@@ -66,6 +66,7 @@ export default function getWellKnownSmartConfig(req: Request, res: Response) {
             "launch",
             "launch/patient",
             "launch/encounter",
+            "launch/questionnaire",
             "patient/*.*",
             "user/*.*",
             "offline_access"

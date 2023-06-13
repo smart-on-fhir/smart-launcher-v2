@@ -39,7 +39,7 @@ export default function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/"                     element={ <Launcher />        } />
+                <Route path="/launcher"                     element={ <Launcher />        } />
                 <Route path="/select-patient"       element={ <PatientPicker />   } />
                 <Route path="/select-encounter"     element={ <EncounterPicker /> } />
                 <Route path="/authorize-app"        element={ <AuthorizeLaunch /> } />
