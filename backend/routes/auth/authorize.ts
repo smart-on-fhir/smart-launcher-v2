@@ -382,6 +382,31 @@ export default class AuthorizeHandler {
             }
         }
 
+        // fhirContext
+        if (launchOptions.fhir_context.size() > 0) {
+            const fhirContexts: Record<"reference", string>[] = [];
+            for (const fhirContext of launchOptions.fhir_context.toJSON()) {
+                try {
+                    fhirContexts.push({
+                        reference: fhirContext.replace(/^\{"(.*)":"(.*)"\}$/, "$1/$2"),
+                    });
+                } catch {}
+            }
+
+            // If "launch" scope is present, add all fhirContexts
+            if (scope.has("launch")) {
+                code.context.fhirContext = fhirContexts;
+            } else {
+                // TODO support all resources - currently only supporting questionnaire
+                // Otherwise, add fhirContexts based on launch/+ scopes provided
+                if (scope.has("launch/questionnaire")) {
+                    code.context.fhirContext = fhirContexts.filter((fhirContext) =>
+                        fhirContext.reference.startsWith("Questionnaire/")
+                    );
+                }
+            }
+        }
+
         // user
         if (scope.has("openid") && (scope.has("profile") || scope.has("fhirUser"))) {
             

@@ -331,12 +331,13 @@ declare namespace SMART {
          */
         tenant?: string
 
+
         /**
          * Array of relative resource References to any resource type other than
          * “Patient” or “Encounter”. It is not prohibited to have more than one
          * Reference to a given type of resource.
          */
-        fhirContext?: string[]
+        fhirContext?: Record<"reference", string>[];
 
         /**
          * Simulated error to throw
