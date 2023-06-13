@@ -66,6 +66,8 @@ export default class LaunchOptions
 
     pkce: SMART.PKCEValidation;
 
+    fhir_context: List = new List();
+
     
     constructor(input: string | SMART.LaunchParams)
     {
@@ -89,6 +91,7 @@ export default class LaunchOptions
         this.pkce          = input.pkce          || "auto"
         this.provider.set(input.provider || "");
         this.patient.set(input.patient  || "");
+        this.fhir_context.set(input.fhir_context || "");
     }
 
     public toString(): string

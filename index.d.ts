@@ -69,6 +69,7 @@ declare namespace SMART {
         jwks?: string
         pkce?: PKCEValidation
         client_type?: SMARTClientType
+        fhir_context?: string;
     }
 
     interface AuthorizeParams {

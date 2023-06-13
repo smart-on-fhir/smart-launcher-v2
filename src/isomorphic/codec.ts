@@ -64,7 +64,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
             params.jwks_url      || "",
             params.jwks          || "",
             clientTypes.indexOf(params.client_type || "public"),
-            PKCEValidationTypes.indexOf(params.pkce || "auto")
+            PKCEValidationTypes.indexOf(params.pkce || "auto"),
+            "", // fhirContext
         ]))
     }
 
@@ -84,7 +85,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         params.jwks_url      || "",
         params.jwks          || "",
         clientTypes.indexOf(params.client_type || "public"),
-        PKCEValidationTypes.indexOf(params.pkce || "auto")
+        PKCEValidationTypes.indexOf(params.pkce || "auto"),
+        params.fhir_context || "",
     ];
 
     return base64UrlEncode(JSON.stringify(arr))
@@ -124,7 +126,8 @@ export function decode(launch: string): SMART.LaunchParams {
         jwks_url     : arr[12] || "",
         jwks         : arr[13] || "",
         client_type  : clientTypes[arr[14]],
-        pkce         : PKCEValidationTypes[arr[15]]
+        pkce         : PKCEValidationTypes[arr[15]],
+        fhir_context: arr[16] || "",
     }
 }
 
