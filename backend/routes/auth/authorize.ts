@@ -18,6 +18,7 @@ import {
     InvalidScopeError,
     OAuthError
 } from "../../errors"
+import FhirContext = SMART.FhirContext;
 
 
 export interface AuthorizeParams {
@@ -384,12 +385,10 @@ export default class AuthorizeHandler {
 
         // fhirContext
         if (launchOptions.fhir_context.size() > 0) {
-            const fhirContexts: Record<"reference", string>[] = [];
+            const fhirContexts: FhirContext[] = [];
             for (const fhirContext of launchOptions.fhir_context.toJSON()) {
                 try {
-                    fhirContexts.push({
-                        reference: fhirContext.replace(/^\{"(.*)":"(.*)"\}$/, "$1/$2"),
-                    });
+                    fhirContexts.push(JSON.parse(fhirContext));
                 } catch {}
             }
 
@@ -401,7 +400,7 @@ export default class AuthorizeHandler {
                 // Otherwise, add fhirContexts based on launch/+ scopes provided
                 if (scope.has("launch/questionnaire")) {
                     code.context.fhirContext = fhirContexts.filter((fhirContext) =>
-                        fhirContext.reference.startsWith("Questionnaire/")
+                        fhirContext.reference?.startsWith("Questionnaire/")
                     );
                 }
             }

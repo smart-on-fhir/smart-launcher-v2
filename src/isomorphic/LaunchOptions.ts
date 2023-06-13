@@ -91,7 +91,7 @@ export default class LaunchOptions
         this.pkce          = input.pkce          || "auto"
         this.provider.set(input.provider || "");
         this.patient.set(input.patient  || "");
-        this.fhir_context.set(input.fhir_context || "");
+        this.fhir_context.setFhirContext(input.fhir_context || "");
     }
 
     public toString(): string

@@ -112,6 +112,22 @@ export default class List
     }
 
     /**
+     * Replaces the entire content of the instance with new one extracted from
+     * the given @items
+     */
+    public setFhirContext(items: string | string[]): List {
+        if (Array.isArray(items)) {
+            this._arr = items.filter(Boolean);
+        } else {
+            const regex = /\{.*?\}/g;
+            console.log('items.match(regex)')
+            console.log(items.match(regex))
+            this._arr = Array.from(items.match(regex) ?? [])
+        }
+        return this;
+    }
+
+    /**
      * Get the token at the given index. The result should be a string, but can
      * also be undefined if there is nothing on that index
      */
