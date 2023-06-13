@@ -120,8 +120,6 @@ export default class List
             this._arr = items.filter(Boolean);
         } else {
             const regex = /\{.*?\}/g;
-            console.log('items.match(regex)')
-            console.log(items.match(regex))
             this._arr = Array.from(items.match(regex) ?? [])
         }
         return this;
