@@ -131,7 +131,9 @@ export default function Launcher() {
     const aud = `${backendOrigin}/v/${fhir_version}/sim/${launchCode}/fhir`;
 
     // FHIR baseUrl for EHR launches
-    const iss = `${backendOrigin}/v/${fhir_version}/fhir`;
+    const iss = ENV.PROXY_FHIR_REQUESTS
+        ? `${backendOrigin}/v/${fhir_version}/fhir`
+        : (ENV as any)[`FHIR_SERVER_${fhir_version.toUpperCase()}`];
 
     // The URL to launch the sample app
     let sampleLaunchUrl = new URL(

@@ -11,6 +11,7 @@ declare global {
         ACCESS_TOKEN       : string
         VERSION            : string
         COMMIT             : string
+        PROXY_FHIR_REQUESTS: boolean
     }
 }
 

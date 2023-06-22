@@ -75,7 +75,8 @@ app.use("/env.js", (_, res) => {
         FHIR_SERVER_R4     : config.fhirServerR4,
         ACCESS_TOKEN       : jwt.sign({ client_id: "launcherUI" }, config.jwtSecret, { expiresIn: "10 years" }),
         VERSION            : pkg.version,
-        COMMIT             : process.env.SOURCE_VERSION
+        COMMIT             : process.env.SOURCE_VERSION,
+        PROXY_FHIR_REQUESTS: process.env.PROXY_FHIR_REQUESTS !== "false",
     };
 
     res.type("application/javascript").send(`var ENV = ${JSON.stringify(out, null, 4)};`);

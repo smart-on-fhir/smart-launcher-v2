@@ -60,5 +60,11 @@ export default {
     /**
      * Our private key as PEM (used to generate the JWKS at /keys)
      */
-    privateKeyAsPem: FS.readFileSync(__dirname + "/../private-key.pem", "utf8")
-}
+    privateKeyAsPem: FS.readFileSync(__dirname + "/../private-key.pem", "utf8"),
+
+    /**
+     * Proxy requests to the FHIR server. Defaults to true. Can be disabled 
+     * if the FHIR server has its own .well-known/smart-configuration
+     */
+    proxyFhirRequests: env.PROXY_FHIR_REQUESTS !== "false",
+};
