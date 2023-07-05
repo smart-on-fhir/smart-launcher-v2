@@ -60,5 +60,11 @@ export default {
     /**
      * Our private key as PEM (used to generate the JWKS at /keys)
      */
-    privateKeyAsPem: FS.readFileSync(__dirname + "/../private-key.pem", "utf8")
+    privateKeyAsPem: FS.readFileSync(__dirname + "/../private-key.pem", "utf8"),
+
+    /**
+     * Associated endpoints for imaging, etc
+     */
+    associatedEndpoints: JSON.parse(env.ASSOCIATED_ENDPOINTS || "[]")
+
 }
