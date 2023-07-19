@@ -63,6 +63,11 @@ export default {
     privateKeyAsPem: FS.readFileSync(__dirname + "/../private-key.pem", "utf8"),
 
     /**
+     * Associated endpoints for imaging, etc
+     */
+    associatedEndpoints: JSON.parse(env.ASSOCIATED_ENDPOINTS || "[]"),
+
+    /**
      * Proxy requests to the FHIR server. Defaults to true. Can be disabled 
      * if the FHIR server has its own .well-known/smart-configuration
      */

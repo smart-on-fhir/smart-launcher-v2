@@ -1,6 +1,6 @@
 import { Request, Response } from "express"
 import { getRequestBaseURL } from "../../../lib"
-
+import config from "../../../config"; 
 
 export default function getWellKnownSmartConfig(req: Request, res: Response) {
     
@@ -173,7 +173,8 @@ export default function getWellKnownSmartConfig(req: Request, res: Response) {
 
             // support for POST-based authorization
             "authorize-post"
-        ]
+        ],
+        associated_endpoints: config?.associatedEndpoints?.length ? config.associatedEndpoints : undefined
     };
 
     res.json(json);
