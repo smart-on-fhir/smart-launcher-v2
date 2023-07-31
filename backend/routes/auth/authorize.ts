@@ -477,7 +477,6 @@ export default class AuthorizeHandler {
         }
 
         if (launchOptions.pkce !== "none") {
-
             // code_challenge_method must be 'S256' if set
             if ((params.code_challenge_method || launchOptions.pkce === "always") && params.code_challenge_method !== 'S256') {
                 throw new InvalidRequestError("Invalid code_challenge_method. Must be S256.")
@@ -593,9 +592,9 @@ export default class AuthorizeHandler {
         }
 
         // ENCOUNTER
-        if (this.needToPickEncounter()) {
-            return this.renderEncounterPicker()
-        }
+        // if (this.needToPickEncounter()) {
+        //     return this.renderEncounterPicker()
+        // }
 
         // AUTH SCREEN
         if (this.needToAuthorize()) {
