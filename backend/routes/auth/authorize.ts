@@ -333,6 +333,7 @@ export default class AuthorizeHandler {
             context: {
                 need_patient_banner: !launchOptions.sim_ehr,
                 smart_style_url: this.baseUrl + "/smart-style.json",
+                fhirContext: launchOptions.fhirContextStr ? JSON.parse(launchOptions.fhirContextStr) : undefined
             },
             client_id   : params.client_id,
             redirect_uri: params.redirect_uri + "",

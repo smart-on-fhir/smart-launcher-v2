@@ -9,6 +9,7 @@ import {
     renderString,
     renderUrl
 } from "../../lib"
+import Clip from "../Clip";
 
 
 const KNOWN_PROPS = {
@@ -65,6 +66,11 @@ const KNOWN_PROPS = {
         type: "string",
         render: (s: any) => renderString(s, 80),
         desc: <>The ID token (if any).</>
+    },
+    fhirContext: {
+        type: "string",
+        render: (s: any) => <code><Clip txt={ JSON.stringify(s) } /></code>,
+        desc: <>References to additional FHIR resources (if any)</>
     },
 }
 
