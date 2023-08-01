@@ -87,6 +87,12 @@ function getValidationErrors(launch: SMART.LaunchParams, query: LauncherQuery) {
         }
     }
 
+    try {
+        JSON.parse(launch.fhirContextStr || "null")
+    } catch {
+        validationErrors.push("Invalid fhirContext JSON")
+    }
+
     return validationErrors
 }
 
@@ -102,21 +108,22 @@ export default function Launcher() {
     const launchCode = encode({
         ...DEFAULT_LAUNCH_PARAMS,
         launch_type,
-        patient      : launch.patient,
-        provider     : launch.provider,
-        encounter    : launch.encounter,
-        skip_login   : launch.skip_login,
-        skip_auth    : launch.skip_auth,
+        patient       : launch.patient,
+        provider      : launch.provider,
+        encounter     : launch.encounter,
+        skip_login    : launch.skip_login,
+        skip_auth     : launch.skip_auth,
         sim_ehr,
-        scope        : launch.scope,
-        redirect_uris: launch.redirect_uris,
-        client_id    : launch.client_id,
-        client_secret: launch.client_secret,
-        auth_error   : launch.auth_error,
-        jwks_url     : launch.jwks_url,
-        jwks         : launch.jwks,
-        client_type  : launch.client_type,
-        pkce         : launch.pkce
+        scope         : launch.scope,
+        redirect_uris : launch.redirect_uris,
+        client_id     : launch.client_id,
+        client_secret : launch.client_secret,
+        auth_error    : launch.auth_error,
+        jwks_url      : launch.jwks_url,
+        jwks          : launch.jwks,
+        client_type   : launch.client_type,
+        pkce          : launch.pkce,
+        fhirContextStr: launch.fhirContextStr
     })
 
     const isStandaloneLaunch = launch_type.includes("standalone");
@@ -491,6 +498,20 @@ function LaunchTab() {
                         </span>
                     </div>
                 </div> : null }
+            <div className="col-sm-6">
+                <div className="form-group">
+                    <label htmlFor="fhirContext" className="text-primary"><code>fhirContext</code></label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="fhirContext"
+                            name="fhirContext"
+                            value={ launch.fhirContextStr }
+                            onChange={ e => setQuery({ fhirContextStr: e.target.value }) }
+                        />
+                        <span className="help-block small">Additional references to FHIR resources to include along with the access token</span>
+                </div>
+            </div>
         </div>
     )
 }

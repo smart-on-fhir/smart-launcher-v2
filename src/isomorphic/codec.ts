@@ -64,7 +64,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
             params.jwks_url      || "",
             params.jwks          || "",
             clientTypes.indexOf(params.client_type || "public"),
-            PKCEValidationTypes.indexOf(params.pkce || "auto")
+            PKCEValidationTypes.indexOf(params.pkce || "auto"),
+            params.fhirContextStr
         ]))
     }
 
@@ -84,7 +85,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         params.jwks_url      || "",
         params.jwks          || "",
         clientTypes.indexOf(params.client_type || "public"),
-        PKCEValidationTypes.indexOf(params.pkce || "auto")
+        PKCEValidationTypes.indexOf(params.pkce || "auto"),
+        params.fhirContextStr
     ];
 
     return base64UrlEncode(JSON.stringify(arr))
@@ -109,22 +111,23 @@ export function decode(launch: string): SMART.LaunchParams {
     }
 
     return {
-        launch_type  : launchType,
-        patient      : arr[1 ] || "",
-        provider     : arr[2 ] || "",
-        encounter    : arr[3 ] || "",
-        skip_login   : arr[4 ] === 1,
-        skip_auth    : arr[5 ] === 1,
-        sim_ehr      : arr[6 ] === 1,
-        scope        : arr[7 ] || "",
-        redirect_uris: arr[8 ] || "",
-        client_id    : arr[9 ] || "",
-        client_secret: arr[10] || "",
-        auth_error   : arr[11] || "",
-        jwks_url     : arr[12] || "",
-        jwks         : arr[13] || "",
-        client_type  : clientTypes[arr[14]],
-        pkce         : PKCEValidationTypes[arr[15]]
+        launch_type     : launchType,
+        patient         : arr[1 ] || "",
+        provider        : arr[2 ] || "",
+        encounter       : arr[3 ] || "",
+        skip_login      : arr[4 ] === 1,
+        skip_auth       : arr[5 ] === 1,
+        sim_ehr         : arr[6 ] === 1,
+        scope           : arr[7 ] || "",
+        redirect_uris   : arr[8 ] || "",
+        client_id       : arr[9 ] || "",
+        client_secret   : arr[10] || "",
+        auth_error      : arr[11] || "",
+        jwks_url        : arr[12] || "",
+        jwks            : arr[13] || "",
+        client_type     : clientTypes[arr[14]],
+        pkce            : PKCEValidationTypes[arr[15]],
+        fhirContextStr  : arr[16] || undefined
     }
 }
 
