@@ -87,6 +87,7 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         clientTypes.indexOf(params.client_type || "public"),
         PKCEValidationTypes.indexOf(params.pkce || "auto"),
         params.fhir_context || "",
+        params.is_embedded_view || false
     ];
 
     return base64UrlEncode(JSON.stringify(arr))
@@ -128,6 +129,7 @@ export function decode(launch: string): SMART.LaunchParams {
         client_type  : clientTypes[arr[14]],
         pkce         : PKCEValidationTypes[arr[15]],
         fhir_context: arr[16] || "",
+        is_embedded_view: arr[17] || false,
     }
 }
 

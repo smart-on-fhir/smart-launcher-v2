@@ -406,6 +406,10 @@ export default class AuthorizeHandler {
             }
         }
 
+        if (launchOptions.is_embedded_view) {
+            code.context.intent = "embedded-browser";
+        }
+
         // user
         if (scope.has("openid") && (scope.has("profile") || scope.has("fhirUser"))) {
             
