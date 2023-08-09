@@ -68,8 +68,6 @@ export default class LaunchOptions
 
     fhir_context: List = new List();
 
-    is_embedded_view: boolean = false;
-
     
     constructor(input: string | SMART.LaunchParams)
     {
@@ -94,7 +92,6 @@ export default class LaunchOptions
         this.provider.set(input.provider || "");
         this.patient.set(input.patient  || "");
         this.fhir_context.setFhirContext(input.fhir_context || "");
-        this.is_embedded_view = input.is_embedded_view || false;
     }
 
     public toString(): string
