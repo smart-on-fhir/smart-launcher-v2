@@ -70,7 +70,6 @@ app.get("/public_key", (_, res) => {
 });
 
 app.post("/endpoint_switch", (req, res) => {
-    console.log(req.body)
     if (req.body && req.body.url) {
         // Extract the "url" property from the request body
         const { url } = req.body;
@@ -80,10 +79,7 @@ app.post("/endpoint_switch", (req, res) => {
             return
         }
 
-        // Send a response
-        console.log(customisedFhirServerR4)
         customisedFhirServerR4 = url;
-        console.log(customisedFhirServerR4)
         res.status(200).json({ message: 'R4 endpoint switched successfully' });
         return
     }
@@ -92,6 +88,15 @@ app.post("/endpoint_switch", (req, res) => {
     res.status(400).json({ error: 'Invalid request, missing "url" property' });
 
 });
+
+app.get("/endpoint_reset", (_, res) => {
+    customisedFhirServerR4 = "";
+    res.status(200).json({ message: 'R4 endpoint reset successfully' })
+})
+
+app.get("/endpoint_switch", (_, res) => {
+    res.status(200).json({ url: customisedFhirServerR4 });
+})
 
 // Provide some env variables to the frontend
 app.use("/env.js", (_, res) => {
