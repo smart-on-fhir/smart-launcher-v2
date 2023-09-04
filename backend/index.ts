@@ -11,9 +11,14 @@ import authServer      from "./routes/auth"
 import launcher        from "./routes/launcher"
 import pkg             from "../package.json"
 import { globalErrorHandler, ipBlackList } from "./middlewares"
+import { isValidURL } from "./lib";
+
+export let customisedFhirServerR4 = ""
 
 
 const app = express()
+
+app.use(express.json());
 
 // CORS everywhere :)
 app.use(cors({ origin: true, credentials: true }))
@@ -62,6 +67,30 @@ app.get("/public_key", (_, res) => {
         }
         res.type("text").send(key);
     });
+});
+
+app.post("/endpoint_switch", (req, res) => {
+    console.log(req.body)
+    if (req.body && req.body.url) {
+        // Extract the "url" property from the request body
+        const { url } = req.body;
+
+        if (!isValidURL(url)) {
+            res.status(400).json({ error: 'Invalid request, "url" is not a valid URL.' });
+            return
+        }
+
+        // Send a response
+        console.log(customisedFhirServerR4)
+        customisedFhirServerR4 = url;
+        console.log(customisedFhirServerR4)
+        res.status(200).json({ message: 'R4 endpoint switched successfully' });
+        return
+    }
+
+    // If the request does not contain a "url" property, return an error response
+    res.status(400).json({ error: 'Invalid request, missing "url" property' });
+
 });
 
 // Provide some env variables to the frontend

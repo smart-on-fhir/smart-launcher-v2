@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken"
 import { NextFunction, Request, Response, RequestHandler } from "express"
 import config from "./config";
 import { HttpError, InvalidRequestError } from "./errors";
-
+import {customisedFhirServerR4} from "./index";
 
 /**
  * Given a request object, returns its base URL
@@ -46,6 +46,11 @@ export function notSupported(message: string = "", code = 400) {
 
 export function getFhirServerBaseUrl(req: Request) {
     const fhirVersion = req.params.fhir_release.toUpperCase();
+
+    if (fhirVersion === 'R4' && customisedFhirServerR4 !== '') {
+        return customisedFhirServerR4
+    }
+
     let fhirServer = config[`fhirServer${fhirVersion}` as keyof typeof config] as string;
 
     // Env variables like FHIR_SERVER_R2_INTERNAL can be set to point the
@@ -105,4 +110,12 @@ export function humanizeArray(arr: string[], quote = false) {
     
     const last = arr.pop();
     return arr.join(", ") + " and " + last;
+}
+
+export function isValidURL(url: string) {
+    // Regular expression pattern to match URLs
+    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
+
+    // Test the string against the pattern
+    return urlPattern.test(url);
 }
