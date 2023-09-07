@@ -9,3 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: curl -X POST "$WEBHOOK_URL?job=smart-launcher-v2-build&token=$WEBHOOK_TOKEN"
+        env:
+          WEBHOOK_URL: ${{ vars.WEBHOOK_URL }}
+          WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
