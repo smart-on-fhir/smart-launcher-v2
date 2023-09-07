@@ -1,0 +1,11 @@
+name: Webhook Deploy
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -X POST "$WEBHOOK_URL?job=smart-launcher-v2-build&token=$WEBHOOK_TOKEN"

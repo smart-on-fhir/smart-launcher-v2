@@ -36,24 +36,24 @@ pipeline {
         sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock $AWS_ENV $GIT_ENV cicd push smart-launcher-v2'
       }
     }
-    // stage('Deploy') {
-    //   steps {
-    //     echo 'Deploying to internal'
-    //     sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock $AWS_ENV $GIT_ENV cicd deploy smart-launcher-v2 internal $GIT_COMMIT'
-    //   }
-    // }
-    // stage('Wait') {
-    //   steps {
-    //     echo 'Waiting for service to reach steady state'
-    //     sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock $AWS_ENV cicd wait smart-launcher-v2 internal'
-    //   }
-    // }
-    // stage('Healthcheck') {
-    //   steps {
-    //     echo 'Checking health of service'
-    //     sh 'curl -m 10 https://smart-launcher-v2-internal.elimuinformatics.com/'
-    //   }
-    // }
+    stage('Deploy') {
+      steps {
+        echo 'Deploying to internal'
+        sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock $AWS_ENV $GIT_ENV cicd deploy smart-launcher-v2 internal $GIT_COMMIT'
+      }
+    }
+    stage('Wait') {
+      steps {
+        echo 'Waiting for service to reach steady state'
+        sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock $AWS_ENV cicd wait smart-launcher-v2 internal'
+      }
+    }
+    stage('Healthcheck') {
+      steps {
+        echo 'Checking health of service'
+        sh 'curl -m 10 https://smart-launcher-v2-internal.elimuinformatics.com/'
+      }
+    }
   }
   post {
     unsuccessful {
