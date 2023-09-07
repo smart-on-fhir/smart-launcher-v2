@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken"
 import { NextFunction, Request, Response, RequestHandler } from "express"
 import config from "./config";
 import { HttpError, InvalidRequestError } from "./errors";
-
+import { SMART } from "..";
 
 /**
  * Given a request object, returns its base URL
@@ -44,7 +44,7 @@ export function notSupported(message: string = "", code = 400) {
     };
 }
 
-export function getFhirServerBaseUrl(req: { params: { fhir_release: string }}) {
+export function getFhirServerBaseUrl(req: Request | SMART.AuthorizeRequest) {
     const fhirVersion = req.params.fhir_release.toUpperCase();
     let fhirServer = config[`fhirServer${fhirVersion}` as keyof typeof config] as string;
 
