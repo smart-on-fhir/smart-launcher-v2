@@ -44,7 +44,7 @@ export function notSupported(message: string = "", code = 400) {
     };
 }
 
-export function getFhirServerBaseUrl(req: Request) {
+export function getFhirServerBaseUrl(req: { params: { fhir_release: string }}) {
     const fhirVersion = req.params.fhir_release.toUpperCase();
     let fhirServer = config[`fhirServer${fhirVersion}` as keyof typeof config] as string;
 

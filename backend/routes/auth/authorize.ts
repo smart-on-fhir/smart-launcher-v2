@@ -432,7 +432,9 @@ export default class AuthorizeHandler {
 
         // The "aud" param must match the apiUrl (but can have different protocol)
         // console.log(req.url, req.baseUrl)
-        const apiUrl = new URL(request.baseUrl.replace(/\/auth.*$/, "/fhir"), this.baseUrl)
+        const apiUrl = config.proxyFhirRequests
+          ? new URL(request.baseUrl.replace(/\/auth.*$/, "/fhir"), this.baseUrl)
+          : new URL(getFhirServerBaseUrl(request));
         const apiUrlHref = apiUrl.href
 
         let audUrl: URL        
