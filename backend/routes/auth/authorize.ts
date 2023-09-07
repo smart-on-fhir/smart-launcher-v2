@@ -293,12 +293,8 @@ export default class AuthorizeHandler {
                 }
             )
             .catch(() => {
-                this.response.status(400)
-                this.response.json({
-                    error: "invalid_request",
-                    error_description: "Failed to auto-select the first encounter for " +
-                        `patient with id of '${this.launchOptions.patient.get(0)}'`
-                })
+                this.launchOptions.encounter = "NONE";
+                this.authorize();
             })
         } else {
             this.redirect("/select-encounter", {
