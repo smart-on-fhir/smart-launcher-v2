@@ -4,7 +4,6 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
   environment {
-    AWS_ACCOUNTS = '435911253355'
     AWS_CREDENTIALS = credentials('AWS-KEYS')
     AWS_ENV = """${sh(
       returnStdout: true,
