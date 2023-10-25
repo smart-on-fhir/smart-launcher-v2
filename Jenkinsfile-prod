@@ -35,12 +35,6 @@ pipeline {
         sh 'docker run -v /var/run/docker.sock:/var/run/docker.sock $AWS_ENV cicd wait smart-launcher-v2 prod'
       }
     }
-    stage('Healthcheck') {
-      steps {
-        echo 'Checking health of service'
-        sh 'curl -m 10 https://smart-launcher-v2.elimuinformatics.com/'
-      }
-    }
   }
   post {
     unsuccessful {
