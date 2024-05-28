@@ -243,9 +243,9 @@ export default class AuthorizeHandler {
             return scope.has("launch/patient") || scope.has("launch");
         }
 
-        // if (launch_type === "cds-hooks") {
-        //     return scope.has("launch/patient") || scope.has("launch");
-        // }
+        if (launch_type === "cds-hooks") {
+            return scope.has("launch/patient") || scope.has("launch");
+        }
 
         return false
     }

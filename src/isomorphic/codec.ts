@@ -19,7 +19,8 @@ export const launchTypes: SMART.LaunchType[] = [
     "patient-portal",
     "provider-standalone",
     "patient-standalone",
-    "backend-service"
+    "backend-service",
+    "cds-hooks"
 ];
 
 export const clientTypes: SMART.SMARTClientType[] = [

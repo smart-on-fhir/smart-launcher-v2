@@ -11,6 +11,7 @@ declare global {
         ACCESS_TOKEN       : string
         VERSION            : string
         COMMIT             : string
+        CDS_SANDBOX_URL    : string
     }
 }
 
@@ -19,7 +20,7 @@ declare namespace SMART {
     /**
      * All the launch types that we recognize
      */
-    type LaunchType = "provider-ehr" | "patient-portal" | "provider-standalone" | "patient-standalone" | "backend-service"; //| "cds-hooks";
+    type LaunchType = "provider-ehr" | "patient-portal" | "provider-standalone" | "patient-standalone" | "backend-service" | "cds-hooks";
 
     type SimulatedError = 
 

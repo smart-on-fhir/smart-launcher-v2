@@ -37,6 +37,14 @@ const launchTypes = [
     }
 ];
 
+if (window.ENV.CDS_SANDBOX_URL) {
+    launchTypes.push({
+        name       : "CDS Hooks Service",
+        description: "Test your CDS services",
+        value      : "cds-hooks"
+    })
+}
+
 const DEFAULT_LAUNCH_PARAMS: SMART.LaunchParams = {
     launch_type  : "provider-ehr",
     patient      : "",
@@ -122,6 +130,7 @@ export default function Launcher() {
     const isStandaloneLaunch = launch_type.includes("standalone");
 
     const isBackendService = launch_type === "backend-service";
+    const isCDSHooksLaunch = launch_type === "cds-hooks";
 
     const { origin } = window.location;
 
@@ -172,8 +181,14 @@ export default function Launcher() {
         userLaunchUrl = new URL(`/ehr?app=${encodeURIComponent(userLaunchUrl.href)}`, origin);
     }
 
+    if (isCDSHooksLaunch) {
+        userLaunchUrl = new URL("/launch.html", ENV.CDS_SANDBOX_URL)
+        userLaunchUrl.searchParams.set("launch", launchCode);
+        userLaunchUrl.searchParams.set("iss", iss);
+    }
+
     let validationErrors = getValidationErrors(launch, query);
-    
+
     return (
         <HelmetProvider>
             <Helmet>
@@ -190,9 +205,9 @@ export default function Launcher() {
                     <li role="presentation" className={ tab === "0" ? "active" : undefined } onClick={ () => setQuery({ tab: "0" }) }>
                         <b role="tab">App Launch Options</b>
                     </li>
-                    <li role="presentation" className={ tab === "1" ? "active" : undefined } onClick={ () => setQuery({ tab: "1" }) }>
+                    { !isCDSHooksLaunch && <li role="presentation" className={ tab === "1" ? "active" : undefined } onClick={ () => setQuery({ tab: "1" }) }>
                         <b role="tab">Client Registration & Validation</b>
-                    </li>
+                    </li> }
                 </ul>
                 <form onSubmit={e => e.preventDefault()}>
                     <div className="tab-content">
@@ -208,7 +223,11 @@ export default function Launcher() {
                     <div className="mt-2" style={{ background: "#F3F3F3", padding: "10px 15px", borderRadius: 5 }}>
                         <h4 className="text-primary mt-0">
                             <i className="glyphicon glyphicon-fire"/> {
-                            isStandaloneLaunch || launch_type === "backend-service" ? "Server's FHIR Base URL" : "App's Launch URL"
+                            isStandaloneLaunch || launch_type === "backend-service" ?
+                                "Server's FHIR Base URL" :
+                                launch_type === "cds-hooks" ?
+                                    "Discovery Endpoint URL" :
+                                    "App's Launch URL"
                         }
                         </h4>
                         <div style={{ display: "flex" }}>
@@ -221,9 +240,15 @@ export default function Launcher() {
                                         value={ isStandaloneLaunch || isBackendService ? aud : launch_url }
                                         onChange={ e => !isStandaloneLaunch && !isBackendService && setQuery({ launch_url: e.target.value }) }
                                         readOnly={ isStandaloneLaunch || isBackendService }
+                                        placeholder={ isStandaloneLaunch || isBackendService ?
+                                            undefined :
+                                            launch_type === "cds-hooks" ?
+                                                "Discovery Endpoint URL" :
+                                                "Launch URL"
+                                        }
                                     />
                                     <span className="input-group-btn">
-                                        { isStandaloneLaunch || isBackendService ? 
+                                        { (isStandaloneLaunch || isBackendService) ? 
                                             <button className="btn btn-primary" onClick={() => copyElement("#launch-url")}>Copy</button> :
                                             validationErrors.length ? 
                                                 <button className="btn btn-default" disabled>Launch</button> :
@@ -238,18 +263,23 @@ export default function Launcher() {
                                     </span>
                                 </div>
                             </div>
-                            <div style={{ flex: "1 1 0", marginLeft: 5 }}>
+                            { launch_type !== "cds-hooks" && <div style={{ flex: "1 1 0", marginLeft: 5 }}>
                                 { validationErrors.filter(e => e !== "Missing app launch URL" && e !== "Invalid app launch URL").length ? 
                                     <button className="btn btn-default" disabled>Launch Sample App</button> :
                                     <a href={sampleLaunchUrl.href} target="_blank" rel="noreferrer noopener" className="btn btn-default">
                                         <span className="text-success">Launch Sample App</span>
                                     </a>
                                 }
-                            </div>
+                            </div> }
                         </div>
-                        { isStandaloneLaunch || launch_type === "backend-service" ?
+                        { (isStandaloneLaunch || launch_type === "backend-service") ?
                             <span className="small text-muted">
                                 Your app should use this url to connect to the sandbox FHIR server
+                            </span> :
+                            launch_type === "cds-hooks" ?
+                            <span className="small text-muted">
+                                If you have developed CDS service(s) enter your discovery endpoint
+                                URL and click "Launch" to launch the CDS Hooks Sandbox.
                             </span> :
                             <span className="small text-muted">
                                 Full url of the page in your app that will initialize the
@@ -317,7 +347,7 @@ function LaunchTab() {
                 </div>
 
                 <div className="row">
-                    <div className="col-md-6">
+                    <div className={ launch.launch_type === "cds-hooks" ? "col-md-12" : "col-md-6" }>
                         <div className="form-group">
                             <label htmlFor="fhir_version" className="text-primary">FHIR Version</label>
                             <select
@@ -335,7 +365,7 @@ function LaunchTab() {
                             </span>
                         </div>
                     </div>
-                    <div className="col-md-6">
+                    { launch.launch_type !== "cds-hooks" && <div className="col-md-6">
                         <div className="form-group">
                             <label htmlFor="sim_error" className="text-primary">Simulated Error</label>
                             <select
@@ -370,10 +400,10 @@ function LaunchTab() {
                                 Force the server to throw certain type of error (useful for manual testing).
                             </span>
                         </div>
-                    </div>
+                    </div> }
                 </div>
 
-                { launch.launch_type !== "backend-service" &&
+                { launch.launch_type !== "backend-service" && launch.launch_type !== "cds-hooks" &&
                 <div className="form-group">
                     <div style={{ borderBottom: "1px solid #EEE" }}>
                         <label className="text-primary">Misc. Options</label>
@@ -444,10 +474,9 @@ function LaunchTab() {
                             }}
                         />
                         <span className="help-block small">
-                            Simulates the active patient in EHR when app is launched. If
-                            no Patient ID is entered or if multiple comma delimited IDs
-                            are specified, a patient picker will be displayed as part of
-                            the launch flow.
+                            Simulates the active patient in EHR when { launch.launch_type === "cds-hooks" ? "the CDS sandbox" : "app" } is
+                            launched. If no Patient ID is entered or if multiple comma delimited IDs are specified, a patient picker will
+                            be displayed as part of the launch flow.
                         </span>
                     </div>
 
@@ -466,10 +495,9 @@ function LaunchTab() {
                                 }}
                             />
                             <span className="help-block small">
-                                Simulates user who is launching the app. If no provider is
-                                selected, or if multiple comma delimited Practitioner IDs
-                                are specified, a login screen will be displayed as part of
-                                the launch flow.
+                                Simulates user who is launching the { launch.launch_type === "cds-hooks" ? "CDS sandbox" : "app" }.
+                                If no provider is selected, or if multiple comma delimited Practitioner IDs are specified,
+                                a login screen will be displayed as part of the launch flow.
                             </span>
                         </div>
                     )}
