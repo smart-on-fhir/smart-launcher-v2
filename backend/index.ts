@@ -40,10 +40,19 @@ app.get("/smart-style.json", (_, res) => {
 })
 
 // Auth server
-app.use(["/v/:fhir_release/sim/:sim/auth", "/v/:fhir_release/auth"], authServer)
+app.use([
+    "/v/:fhir_release/sim/:sim/s/:server/auth",
+    "/v/:fhir_release/sim/:sim/auth",
+    "/v/:fhir_release/auth"
+], authServer)
 
 // FHIR servers
-app.use(["/v/:fhir_release/sim/:sim/fhir", "/v/:fhir_release/fhir"], fhirServer)
+app.use([
+    "/v/:fhir_release/sim/:sim/s/:server/fhir",
+    "/v/:fhir_release/sim/:sim/fhir",
+    "/v/:fhir_release/s/:server/fhir",
+    "/v/:fhir_release/fhir"
+], fhirServer)
 
 // The launcher endpoint
 app.get("/launcher", launcher);
