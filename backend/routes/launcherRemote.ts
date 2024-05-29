@@ -61,7 +61,8 @@ export default (req: Request, res: Response) => {
     // iss ---------------------------------------------------------------------
     const sim = new LaunchOptions({
         launch_type: "provider-ehr",
-        fhir_server: fhir_server.href
+        fhir_server: fhir_server.href,
+        sim_ehr    : bool(sim_ehr)
     })
 
     const launchOptions = new LaunchOptions({
