@@ -75,7 +75,7 @@ export default (req: Request, res: Response) => {
         client_type: "public",
     })
 
-    const iss = new URL("/v/r" + ver + "/fhir" + sim + "/fhir", getRequestBaseURL(req))
+    const iss = new URL("/v/r" + ver + "/sim/" + sim + "/fhir", getRequestBaseURL(req))
     
     // Make sure we use the correct iss protocol, depending on the launch_uri
     iss.protocol = launch_uri.protocol;
