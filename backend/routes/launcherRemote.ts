@@ -75,13 +75,16 @@ export default (req: Request, res: Response) => {
         client_type: "public",
     })
 
-    const iss = new URL("/v/r" + ver + "/sim/" + sim + "/fhir", getRequestBaseURL(req))
+    const iss = new URL("/v/r" + ver + "/sim/" + sim.toString() + "/fhir", getRequestBaseURL(req))
+    
     
     // Make sure we use the correct iss protocol, depending on the launch_uri
     iss.protocol = launch_uri.protocol;
 
     launch_uri.searchParams.set("iss", iss.href)
     launch_uri.searchParams.set("launch", launchOptions.toString())
+
+    console.log(launch_uri)
 
     res.redirect(launch_uri.href);
 };
