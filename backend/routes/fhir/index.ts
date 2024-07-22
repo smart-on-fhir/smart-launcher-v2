@@ -1,4 +1,4 @@
-import { Router, text }         from "express"
+import { json, Router, text } from "express"
 import getWellKnownSmartConfig  from "./.well-known/smart-configuration"
 import getWellKnownOpenidConfig from "./.well-known/openid-configuration"
 import getCapabilityStatement   from "./metadata"
@@ -7,6 +7,8 @@ import { asyncRouteWrap }       from "../../lib"
 
 
 const router = Router({ mergeParams: true })
+
+router.use(json({ limit: '50mb' }));
 
 router.get("/.well-known/smart-configuration" , getWellKnownSmartConfig)
 router.get("/.well-known/openid-configuration", getWellKnownOpenidConfig)

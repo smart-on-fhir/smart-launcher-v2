@@ -23,7 +23,7 @@ export default async function proxy(req: Request, res: Response) {
 
     // Add the body in case of POST or PUT ---------------------------------
     if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
-        fhirRequestOptions.body = req.body + "";
+        fhirRequestOptions.body = req.body;
     }
 
     // Build request headers -----------------------------------------------
@@ -46,6 +46,11 @@ export default async function proxy(req: Request, res: Response) {
             "accept",
             fhirVersion === "R2" ? "application/json+fhir" : "application/fhir+json"
         );
+    }
+
+    // Stringify JSON body ---------------------------------
+    if (fhirRequestOptions.headers.get("content-type") === "application/json" && fhirRequestOptions.body) {
+        fhirRequestOptions.body =  JSON.stringify(fhirRequestOptions.body)
     }
 
     // Proxy ---------------------------------------------------------------
