@@ -19,5 +19,5 @@
 set -xe
 
 # Build the Docker image for multiple architectures, then push to Docker Hub.
-docker buildx build --file ./Dockerfile --tag aehrc/smart-launcher-v2 \
+docker buildx build --file ./Dockerfile --tag aehrc/smart-launcher-v2:latest \
   --platform linux/amd64,linux/arm64/v8 --push --no-cache .
