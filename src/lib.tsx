@@ -1,7 +1,6 @@
 import { SMART } from "../"
 import moment from "moment"
 import { encode } from "./isomorphic/codec";
-import Clip from "./components/Clip";
 
 const RE_YEAR       = /\d{4}$/;
 const RE_MONTH_YEAR = /\d{4}-d{2}$/;
@@ -120,15 +119,6 @@ export function renderUrl(x: any) {
     return <span className="text-info">{x + ""}</span>
 }
 
-export function renderString(x: any, clip?: true | number) {
-    if (clip === true) {
-        return <span className="text-success"><Clip txt={x} /></span>
-    }
-    if (clip) {
-        return <span className="text-success"><Clip txt={x} max={clip} /></span>
-    }
-    return <span className="text-success">{x}</span>
-}
 
 export function renderNumber(x: any) {
     return <span className="text-danger">{x + ""}</span>
