@@ -69,34 +69,41 @@ app.get("/public_key", (_, res) => {
     });
 });
 
-app.post("/endpoint_switch", (req, res) => {
-    if (req.body && req.body.url) {
-        // Extract the "url" property from the request body
-        const { url } = req.body;
 
-        if (!isValidURL(url)) {
-            res.status(400).json({ error: 'Invalid request, "url" is not a valid URL.' });
-            return
-        }
+/*
+  * The following endpoints are used to switch between different source FHIR servers without redeploying.
+  * It is now switched off to reduce complexity, and was only implemented as a temporary solution so it might have bugs.
+  * If anyone comes across this code and thinks it is useful, please feel free to create an issue on the GitHub repository, I'll look into re-enabling it.
+ */
 
-        customisedFhirServerR4 = url;
-        res.status(200).json({ message: 'R4 endpoint switched successfully' });
-        return
-    }
-
-    // If the request does not contain a "url" property, return an error response
-    res.status(400).json({ error: 'Invalid request, missing "url" property' });
-
-});
-
-app.get("/endpoint_reset", (_, res) => {
-    customisedFhirServerR4 = "";
-    res.status(200).json({ message: 'R4 endpoint reset successfully' })
-})
-
-app.get("/endpoint_switch", (_, res) => {
-    res.status(200).json({ url: customisedFhirServerR4 });
-})
+// app.post("/endpoint_switch", (req, res) => {
+//     if (req.body && req.body.url) {
+//         // Extract the "url" property from the request body
+//         const { url } = req.body;
+//
+//         if (!isValidURL(url)) {
+//             res.status(400).json({ error: 'Invalid request, "url" is not a valid URL.' });
+//             return
+//         }
+//
+//         customisedFhirServerR4 = url;
+//         res.status(200).json({ message: 'R4 endpoint switched successfully' });
+//         return
+//     }
+//
+//     // If the request does not contain a "url" property, return an error response
+//     res.status(400).json({ error: 'Invalid request, missing "url" property' });
+//
+// });
+//
+// app.get("/endpoint_reset", (_, res) => {
+//     customisedFhirServerR4 = "";
+//     res.status(200).json({ message: 'R4 endpoint reset successfully' })
+// })
+//
+// app.get("/endpoint_switch", (_, res) => {
+//     res.status(200).json({ url: customisedFhirServerR4 });
+// })
 
 // Provide some env variables to the frontend
 app.use("/env.js", (_, res) => {
@@ -115,8 +122,13 @@ app.use("/env.js", (_, res) => {
     res.type("application/javascript").send(`var ENV = ${JSON.stringify(out, null, 4)};`);
 });
 
-// React app - redirect all to ./build/index.html
-app.get("*", (_, res) => res.sendFile("index.html", { root: "./build" }));
+// Handle all routes
+app.get("*", (req, res) => {
+    const fhirR4ServerUrl = req.protocol + '://' + req.get('host') + '/v/r4/fhir';
+
+    res.send(
+  `This service is healthy, but this route does not exist (Something might have went wrong!).\nTo access the R4 server, visit ${fhirR4ServerUrl}.\nThis server is currently proxying the following FHIR servers:\nR2: ${config.fhirServerR2}\nR3: ${config.fhirServerR3}\nR4: ${config.fhirServerR4}`
+)});
 
 // Catch all errors
 app.use(globalErrorHandler)
