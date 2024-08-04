@@ -6,6 +6,8 @@ This fork of the SMART Launcher has been slightly modified to be used as a proxy
 It was used to support the launching of [Smart Forms](https://github.com/aehrc/smart-forms), a FHIR questionnaire rendering SMART app from a [EHR simulator](https://github.com/aehrc/smart-ehr-launcher) for demo and testing purposes.
 Leveraging the existing internals of the SMART Launcher provides a way to indirectly enable the SMART App Launch functionality on top of any FHIR server, notably [HAPI](https://github.com/hapifhir/hapi-fhir-jpaserver-starter) in Smart Form's use case.
 
+This proxy component is only tested on open servers so far, and it is not guaranteed to work with servers that require authorisation.
+
 A live demo app is available at: https://ehr.smartforms.io
 
 ### Fork changes

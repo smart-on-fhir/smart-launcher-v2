@@ -11,7 +11,6 @@ import authServer      from "./routes/auth"
 import launcher        from "./routes/launcher"
 import pkg             from "../package.json"
 import { globalErrorHandler, ipBlackList } from "./middlewares"
-import { isValidURL } from "./lib";
 
 export let customisedFhirServerR4 = ""
 
@@ -25,8 +24,6 @@ app.use(cors({ origin: true, credentials: true }))
 
 // Block some IPs
 app.use(ipBlackList(process.env.IP_BLACK_LIST || ""));
-
-app.use(express.static(Path.join(__dirname, '../build/')));
 
 app.get("/smart-style.json", (_, res) => {
     res.json({
