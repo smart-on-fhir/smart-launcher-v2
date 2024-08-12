@@ -47,9 +47,11 @@ export function notSupported(message: string = "", code = 400) {
 
 export function getFhirServerBaseUrl(req: Request) {
     try {
-        var sim = decode(req.params.sim)
-        if (sim.fhir_server) {
-            return sim.fhir_server
+        if (req.params.sim) {
+            var sim = decode(req.params.sim)
+            if (sim.fhir_server) {
+                return sim.fhir_server
+            }
         }
     } catch (ex) {
         console.error("Invalid sim: " + ex)
