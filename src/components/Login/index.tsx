@@ -132,7 +132,7 @@ export default function Login() {
                                     className="btn btn-success"
                                     style={{ minWidth: "6em" }}
                                     onClick={submit}
-                                    disabled={!id}
+                                    disabled={!id && !noData}
                                     ref={submitButton}
                                 >
                                     { noData ? "Continue Without User" : "Login" }
