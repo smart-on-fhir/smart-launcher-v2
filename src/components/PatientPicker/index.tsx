@@ -91,7 +91,7 @@ export default function PatientPicker() {
         url.searchParams.set("name:contains", searchText);
     }
     
-    url.searchParams.set("_format" , "application/json+fhir")
+    url.searchParams.set("_format" , "json")
     url.searchParams.set("_summary", "true")
     url.searchParams.set("_count"  , pageSize + "")
 
