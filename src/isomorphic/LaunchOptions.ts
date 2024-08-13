@@ -66,6 +66,8 @@ export default class LaunchOptions
 
     pkce: SMART.PKCEValidation;
 
+    fhir_server?: string;
+
     
     constructor(input: string | SMART.LaunchParams)
     {
@@ -87,6 +89,7 @@ export default class LaunchOptions
         this.jwks          = input.jwks          || ""
         this.client_type   = input.client_type   || "public"
         this.pkce          = input.pkce          || "auto"
+        this.fhir_server   = input.fhir_server   || ""
         this.provider.set(input.provider || "");
         this.patient.set(input.patient  || "");
     }
@@ -114,7 +117,8 @@ export default class LaunchOptions
             jwks_url     : this.jwks_url,
             jwks         : this.jwks,
             client_type  : this.client_type,
-            pkce         : this.pkce
+            pkce         : this.pkce,
+            fhir_server  : this.fhir_server
         }
     }
 }

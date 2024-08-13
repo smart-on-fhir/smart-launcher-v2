@@ -49,7 +49,8 @@ export default async function proxy(req: Request, res: Response) {
     }
 
     // Proxy ---------------------------------------------------------------
-    const response = await fetch(new URL(fhirServer + req.url).href, fhirRequestOptions);
+    const _url = new URL(fhirServer + req.url).href.replace(/\/\s*\//g, "/")
+    const response = await fetch(_url, fhirRequestOptions);
 
     res.status(response.status);
 
@@ -62,7 +63,7 @@ export default async function proxy(req: Request, res: Response) {
     let body = await response.text()
 
     if (!isBinary) {
-        body = body.replaceAll(fhirServer + "", `${getRequestBaseURL(req)}/v/${fhirVersionLower}/fhir`);
+        body = body.replaceAll(fhirServer + "", `${getRequestBaseURL(req)}${req.baseUrl}`);
     }
 
     res.end(body);

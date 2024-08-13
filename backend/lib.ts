@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken"
 import { NextFunction, Request, Response, RequestHandler } from "express"
 import config from "./config";
 import { HttpError, InvalidRequestError } from "./errors";
+import { decode } from "../src/isomorphic/codec";
 
 
 /**
@@ -45,6 +46,17 @@ export function notSupported(message: string = "", code = 400) {
 }
 
 export function getFhirServerBaseUrl(req: Request) {
+    try {
+        if (req.params.sim) {
+            var sim = decode(req.params.sim)
+            if (sim.fhir_server) {
+                return sim.fhir_server
+            }
+        }
+    } catch (ex) {
+        console.error("Invalid sim: " + ex)
+    }
+
     const fhirVersion = req.params.fhir_release.toUpperCase();
     let fhirServer = config[`fhirServer${fhirVersion}` as keyof typeof config] as string;
 

@@ -9,6 +9,7 @@ import config          from "./config"
 import fhirServer      from "./routes/fhir"
 import authServer      from "./routes/auth"
 import launcher        from "./routes/launcher"
+import launcherRemote  from "./routes/launcherRemote"
 import pkg             from "../package.json"
 import { globalErrorHandler, ipBlackList } from "./middlewares"
 
@@ -40,13 +41,23 @@ app.get("/smart-style.json", (_, res) => {
 })
 
 // Auth server
-app.use(["/v/:fhir_release/sim/:sim/auth", "/v/:fhir_release/auth"], authServer)
+app.use([
+    "/v/:fhir_release/sim/:sim/s/:server/auth",
+    "/v/:fhir_release/sim/:sim/auth",
+    "/v/:fhir_release/auth"
+], authServer)
 
 // FHIR servers
-app.use(["/v/:fhir_release/sim/:sim/fhir", "/v/:fhir_release/fhir"], fhirServer)
+app.use([
+    "/v/:fhir_release/sim/:sim/s/:server/fhir",
+    "/v/:fhir_release/sim/:sim/fhir",
+    "/v/:fhir_release/s/:server/fhir",
+    "/v/:fhir_release/fhir"
+], fhirServer)
 
 // The launcher endpoint
 app.get("/launcher", launcher);
+app.get("/remote-launch", launcherRemote);
 
 // Host public keys for backend services JWKS auth
 app.get("/keys", async (_, res) => {

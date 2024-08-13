@@ -64,7 +64,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
             params.jwks_url      || "",
             params.jwks          || "",
             clientTypes.indexOf(params.client_type || "public"),
-            PKCEValidationTypes.indexOf(params.pkce || "auto")
+            PKCEValidationTypes.indexOf(params.pkce || "auto"),
+            params.fhir_server   || ""
         ]))
     }
 
@@ -84,7 +85,8 @@ export function encode(params: SMART.LaunchParams, ignoreErrors = false): string
         params.jwks_url      || "",
         params.jwks          || "",
         clientTypes.indexOf(params.client_type || "public"),
-        PKCEValidationTypes.indexOf(params.pkce || "auto")
+        PKCEValidationTypes.indexOf(params.pkce || "auto"),
+        params.fhir_server   || ""
     ];
 
     return base64UrlEncode(JSON.stringify(arr))
@@ -124,7 +126,8 @@ export function decode(launch: string): SMART.LaunchParams {
         jwks_url     : arr[12] || "",
         jwks         : arr[13] || "",
         client_type  : clientTypes[arr[14]],
-        pkce         : PKCEValidationTypes[arr[15]]
+        pkce         : PKCEValidationTypes[arr[15]],
+        fhir_server  : arr[16] || "",
     }
 }
 
@@ -190,7 +193,8 @@ function decodeLegacy(object: Record<string, string>): SMART.LaunchParams {
         jwks_url     : "",
         jwks         : "",
         client_type  : "public", // "backend-service"
-        pkce         : "auto"
+        pkce         : "auto",
+        fhir_server  : ""
     }
 
     if (object.d && Number.isInteger(+object.d)) { // auth_error
@@ -222,6 +226,9 @@ function decodeLegacy(object: Record<string, string>): SMART.LaunchParams {
     }
     if (object.r) {
         out.jwks = object.r
+    }
+    if (object.s) {
+        out.fhir_server = object.s
     }
     // -------------------------------------------------------------------------
 
