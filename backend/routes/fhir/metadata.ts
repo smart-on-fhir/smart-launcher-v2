@@ -69,6 +69,14 @@ function augmentConformance(json: fhir4.CapabilityStatement, baseUrl: string) {
                 text: "OAuth2 using SMART-on-FHIR profile (see http://docs.smarthealthit.org)"
             }
         ];
+
+        // There is a bug in our current sandbox causing the definition of the
+        // Location.near parameter to not have a type property. If so - fix it here!
+        const Location = json.rest[0].resource?.find(r => r.type === "Location")
+        const nearDef  = Location?.searchParam?.find(p => p.name === "near")
+        if (nearDef && !nearDef.type) {
+            nearDef.type = "special"
+        }
     }
 
     return json;
