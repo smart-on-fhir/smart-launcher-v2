@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent { label 'ecs' }
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
