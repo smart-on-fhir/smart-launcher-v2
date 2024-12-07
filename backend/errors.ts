@@ -30,9 +30,9 @@ export class OAuthError extends HttpError
         super(message, ...args)
     }
 
-    errorId(id: string) {
-        this.id = id
-        return this
+    errorId(id: "login_required" | "interaction_required" | "invalid_request" | "invalid_client" | "invalid_scope" | string) {
+        this.id = id;
+        return this;
     }
 
     render(req: Request, res: Response) {

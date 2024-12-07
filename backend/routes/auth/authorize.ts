@@ -40,6 +40,8 @@ export interface AuthorizeParams {
     encounter?: string
     auth_success?: "0" | "1"
     login_success?: string
+    prompt?: string
+    id_token_hint?: string
 }
 
 
@@ -56,6 +58,8 @@ export default class AuthorizeHandler {
     protected baseUrl: string;
 
     protected scope: ScopeSet;
+
+    protected idTokenUser?: string;
 
     public static handle(req: Request, res: Response) {
         if (req.method === "POST") {
@@ -466,6 +470,46 @@ export default class AuthorizeHandler {
         }
     }
 
+    private validateIdTokenHint(idTokenHint: string): void {
+        if (!idTokenHint) {
+            throw new InvalidRequestError("id_token_hint is required when prompt=none")
+                .errorId("invalid_request")
+                .status(400);
+        }
+
+        try {
+            // Verify the token was issued by us and is still valid
+            const decoded = jwt.verify(idTokenHint, config.privateKeyAsPem,
+                { algorithms: config.supportedAlgorithms as jwt.Algorithm }
+
+            ) as unknown as {
+                
+                fhirUser: string;
+                exp: number;
+            };
+
+            // Require patient-type user
+            if (!decoded.fhirUser?.startsWith("Patient/")) {
+                throw new InvalidRequestError("id_token_hint must reference a patient user")
+                    .errorId("login_required")
+                    .status(400);
+            }
+
+            // Store the user ID for later use
+            this.idTokenUser = decoded.fhirUser;
+
+        } catch (e) {
+            if (e instanceof jwt.TokenExpiredError) {
+                throw new InvalidRequestError("id_token_hint has expired")
+                    .errorId("login_required")
+                    .status(400);
+            }
+            throw new InvalidRequestError("Invalid id_token_hint")
+                .errorId("invalid_request")
+                .status(400);
+        }
+    }
+
     /**
      * The client constructs the request URI by adding the following
      * parameters to the query component of the authorization endpoint URI
@@ -492,6 +536,33 @@ export default class AuthorizeHandler {
     {
         const { params, launchOptions } = this
 
+        // Handle prompt=none flow
+        if (params.prompt === "none") {
+            // Validate id_token_hint first
+            this.validateIdTokenHint(params.id_token_hint!);
+            
+            // For prompt=none, force patient-standalone launch
+            launchOptions.launch_type = "patient-standalone";
+            launchOptions.skip_login = true;
+            launchOptions.skip_auth = true;
+            
+            // Set the patient from the validated ID token
+            const patientId = this.idTokenUser!.split("/")[1];
+            launchOptions.patient.set(patientId);
+
+            // Validate the request before proceeding
+            this.validateAuthorizeRequest();
+            
+            // Create and redirect with the new authorization code
+            const RedirectURL = new URL(decodeURIComponent(params.redirect_uri));
+            RedirectURL.searchParams.set("code", this.createAuthCode());
+            if (params.state) {
+                RedirectURL.searchParams.set("state", params.state);
+            }
+            return this.response.redirect(RedirectURL.href);
+        }
+
+        // Continue with existing authorization flow
         this.validateAuthorizeRequest();
 
         // Handle response from dialogs
