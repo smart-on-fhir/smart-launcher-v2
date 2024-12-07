@@ -18,6 +18,8 @@ import {
     InvalidScopeError,
     OAuthError
 } from "../../errors"
+import crypto from 'crypto'
+import { TokenContext } from '../../lib/TokenCache'
 
 
 export interface AuthorizeParams {
@@ -470,44 +472,28 @@ export default class AuthorizeHandler {
         }
     }
 
-    private validateIdTokenHint(idTokenHint: string): void {
+    private validateIdTokenHint(idTokenHint: string): TokenContext {
         if (!idTokenHint) {
             throw new InvalidRequestError("id_token_hint is required when prompt=none")
                 .errorId("invalid_request")
                 .status(400);
         }
 
-        try {
-            // Verify the token was issued by us and is still valid
-            const decoded = jwt.verify(idTokenHint, config.privateKeyAsPem,
-                { algorithms: config.supportedAlgorithms as jwt.Algorithm }
+        // Hash the provided id_token_hint
+        const idTokenHash = crypto
+            .createHash('sha256')
+            .update(idTokenHint)
+            .digest('hex');
 
-            ) as unknown as {
-                
-                fhirUser: string;
-                exp: number;
-            };
-
-            // Require patient-type user
-            if (!decoded.fhirUser?.startsWith("Patient/")) {
-                throw new InvalidRequestError("id_token_hint must reference a patient user")
-                    .errorId("login_required")
-                    .status(400);
-            }
-
-            // Store the user ID for later use
-            this.idTokenUser = decoded.fhirUser;
-
-        } catch (e) {
-            if (e instanceof jwt.TokenExpiredError) {
-                throw new InvalidRequestError("id_token_hint has expired")
-                    .errorId("login_required")
-                    .status(400);
-            }
-            throw new InvalidRequestError("Invalid id_token_hint")
-                .errorId("invalid_request")
+        // Look up the context
+        const context = config.tokenCache.get(idTokenHash);
+        if (!context) {
+            throw new InvalidRequestError("Unknown or expired id_token_hint")
+                .errorId("login_required")
                 .status(400);
         }
+
+        return context;
     }
 
     /**
@@ -538,22 +524,24 @@ export default class AuthorizeHandler {
 
         // Handle prompt=none flow
         if (params.prompt === "none") {
-            // Validate id_token_hint first
-            this.validateIdTokenHint(params.id_token_hint!);
+            // Get the previous authorization context
+            const context = this.validateIdTokenHint(params.id_token_hint!);
+            console.log("Prev token context", context)
             
-            // For prompt=none, force patient-standalone launch
+            // Set up launch params from previous context
             launchOptions.launch_type = "patient-standalone";
             launchOptions.skip_login = true;
             launchOptions.skip_auth = true;
-            
-            // Set the patient from the validated ID token
-            const patientId = this.idTokenUser!.split("/")[1];
-            launchOptions.patient.set(patientId);
+            launchOptions.patient.set(context.patient || "");
 
+            launchOptions.scope = context.scope;
+            
             // Validate the request before proceeding
             this.validateAuthorizeRequest();
-            
-            // Create and redirect with the new authorization code
+            console.log("validated authz request", launchOptions);
+
+
+            // Create and redirect with new authorization code
             const RedirectURL = new URL(decodeURIComponent(params.redirect_uri));
             RedirectURL.searchParams.set("code", this.createAuthCode());
             if (params.state) {
@@ -561,6 +549,7 @@ export default class AuthorizeHandler {
             }
             return this.response.redirect(RedirectURL.href);
         }
+        console.log("no prompt=none, continuing");
 
         // Continue with existing authorization flow
         this.validateAuthorizeRequest();
