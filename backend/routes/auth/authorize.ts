@@ -71,6 +71,7 @@ export default class AuthorizeHandler {
         const params: AuthorizeParams = req.method === "POST" ? req.body : req.query
 
         try {
+            console.log("handling authz", params.launch, req.params.sim);
             var launchOptions = new LaunchOptions(String(params.launch || "") || req.params.sim || "")
         } catch (ex) {
             throw new InvalidRequestError("Invalid launch options: " + ex)
@@ -334,6 +335,7 @@ export default class AuthorizeHandler {
         const { params, launchOptions } = this
 
         const scope = new ScopeSet(decodeURIComponent(this.params.scope));
+        console.log("Create authz code with", scope);
         
         const code: SMART.AuthorizationToken = {
             context: {
@@ -406,6 +408,8 @@ export default class AuthorizeHandler {
                 }
             }
         }
+
+        console.log("Authz code as", code, launchOptions);
 
         return jwt.sign(code, config.jwtSecret, { expiresIn: "5m" });
     }
@@ -527,15 +531,26 @@ export default class AuthorizeHandler {
             // Get the previous authorization context
             const context = this.validateIdTokenHint(params.id_token_hint!);
             console.log("Prev token context", context)
-            
+
+
             // Set up launch params from previous context
-            launchOptions.launch_type = "patient-standalone";
             launchOptions.skip_login = true;
             launchOptions.skip_auth = true;
-            launchOptions.patient.set(context.patient || "");
+
+            if (context.patient) {
+                launchOptions.patient.set(context.patient);
+            }
+            if (context.user.startsWith("Practitioner")) {
+                launchOptions.provider.set(context.user.split("/")[1]);
+                launchOptions.launch_type = "provider-standalone";
+            }
+            if (context.user.startsWith("Patient")) {
+                launchOptions.patient.set(context.patient);
+                launchOptions.launch_type = "patient-standalone";
+            }
 
             launchOptions.scope = context.scope;
-            
+
             // Validate the request before proceeding
             this.validateAuthorizeRequest();
             console.log("validated authz request", launchOptions);
