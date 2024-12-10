@@ -9,7 +9,7 @@ export interface TokenContext {
     patient?: string
     user: string
     client_id: string
-    contex: Record<string, any>
+    context: Record<string, any>
     exp: number
 }
 
