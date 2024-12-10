@@ -539,7 +539,7 @@ export default class AuthorizeHandler {
                 launchOptions.launch_type = "provider-standalone";
             }
             if (context.user.startsWith("Patient")) {
-                launchOptions.patient.set(context.patient);
+                launchOptions.patient.set(context.user.split("/")[1]);
                 launchOptions.launch_type = "patient-standalone";
             }
 
