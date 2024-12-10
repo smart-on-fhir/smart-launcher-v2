@@ -71,7 +71,6 @@ export default class AuthorizeHandler {
         const params: AuthorizeParams = req.method === "POST" ? req.body : req.query
 
         try {
-            console.log("handling authz", params.launch, req.params.sim);
             var launchOptions = new LaunchOptions(String(params.launch || "") || req.params.sim || "")
         } catch (ex) {
             throw new InvalidRequestError("Invalid launch options: " + ex)
@@ -335,7 +334,6 @@ export default class AuthorizeHandler {
         const { params, launchOptions } = this
 
         const scope = new ScopeSet(decodeURIComponent(this.params.scope));
-        console.log("Create authz code with", scope);
         
         const code: SMART.AuthorizationToken = {
             context: {
@@ -408,8 +406,6 @@ export default class AuthorizeHandler {
                 }
             }
         }
-
-        console.log("Authz code as", code, launchOptions);
 
         return jwt.sign(code, config.jwtSecret, { expiresIn: "5m" });
     }
@@ -530,8 +526,6 @@ export default class AuthorizeHandler {
         if (params.prompt === "none") {
             // Get the previous authorization context
             const context = this.validateIdTokenHint(params.id_token_hint!);
-            console.log("Prev token context", context)
-
 
             // Set up launch params from previous context
             launchOptions.skip_login = true;
@@ -553,8 +547,6 @@ export default class AuthorizeHandler {
 
             // Validate the request before proceeding
             this.validateAuthorizeRequest();
-            console.log("validated authz request", launchOptions);
-
 
             // Create and redirect with new authorization code
             const RedirectURL = new URL(decodeURIComponent(params.redirect_uri));
@@ -564,8 +556,6 @@ export default class AuthorizeHandler {
             }
             return this.response.redirect(RedirectURL.href);
         }
-        console.log("no prompt=none, continuing");
-
         // Continue with existing authorization flow
         this.validateAuthorizeRequest();
 
