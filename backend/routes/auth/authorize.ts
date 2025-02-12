@@ -18,6 +18,8 @@ import {
     InvalidScopeError,
     OAuthError
 } from "../../errors"
+import crypto from 'crypto'
+import { TokenContext } from '../../lib/TokenCache'
 
 
 export interface AuthorizeParams {
@@ -40,6 +42,8 @@ export interface AuthorizeParams {
     encounter?: string
     auth_success?: "0" | "1"
     login_success?: string
+    prompt?: string
+    id_token_hint?: string
 }
 
 
@@ -56,6 +60,8 @@ export default class AuthorizeHandler {
     protected baseUrl: string;
 
     protected scope: ScopeSet;
+
+    protected idTokenUser?: string;
 
     public static handle(req: Request, res: Response) {
         if (req.method === "POST") {
@@ -466,6 +472,30 @@ export default class AuthorizeHandler {
         }
     }
 
+    private validateIdTokenHint(idTokenHint: string): TokenContext {
+        if (!idTokenHint) {
+            throw new InvalidRequestError("id_token_hint is required when prompt=none")
+                .errorId("invalid_request")
+                .status(400);
+        }
+
+        // Hash the provided id_token_hint
+        const idTokenHash = crypto
+            .createHash('sha256')
+            .update(idTokenHint)
+            .digest('hex');
+
+        // Look up the context
+        const context = config.tokenCache.get(idTokenHash);
+        if (!context) {
+            throw new InvalidRequestError("Unknown or expired id_token_hint")
+                .errorId("login_required")
+                .status(400);
+        }
+
+        return context;
+    }
+
     /**
      * The client constructs the request URI by adding the following
      * parameters to the query component of the authorization endpoint URI
@@ -492,6 +522,41 @@ export default class AuthorizeHandler {
     {
         const { params, launchOptions } = this
 
+        // Handle prompt=none flow
+        if (params.prompt === "none") {
+            // Get the previous authorization context
+            const context = this.validateIdTokenHint(params.id_token_hint!);
+
+            // Set up launch params from previous context
+            launchOptions.skip_login = true;
+            launchOptions.skip_auth = true;
+
+            if (context.patient) {
+                launchOptions.patient.set(context.patient);
+            }
+            if (context.user.startsWith("Practitioner")) {
+                launchOptions.provider.set(context.user.split("/")[1]);
+                launchOptions.launch_type = "provider-standalone";
+            }
+            if (context.user.startsWith("Patient")) {
+                launchOptions.patient.set(context.user.split("/")[1]);
+                launchOptions.launch_type = "patient-standalone";
+            }
+
+            launchOptions.scope = context.scope;
+
+            // Validate the request before proceeding
+            this.validateAuthorizeRequest();
+
+            // Create and redirect with new authorization code
+            const RedirectURL = new URL(decodeURIComponent(params.redirect_uri));
+            RedirectURL.searchParams.set("code", this.createAuthCode());
+            if (params.state) {
+                RedirectURL.searchParams.set("state", params.state);
+            }
+            return this.response.redirect(RedirectURL.href);
+        }
+        // Continue with existing authorization flow
         this.validateAuthorizeRequest();
 
         // Handle response from dialogs

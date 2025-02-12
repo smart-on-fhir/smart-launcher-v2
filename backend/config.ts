@@ -1,4 +1,5 @@
 import FS from "fs"
+import { TokenCache } from './lib/TokenCache'
 
 const { env } = process
 
@@ -65,6 +66,8 @@ export default {
     /**
      * Associated endpoints for imaging, etc
      */
-    associatedEndpoints: JSON.parse(env.ASSOCIATED_ENDPOINTS || "[]")
+    associatedEndpoints: JSON.parse(env.ASSOCIATED_ENDPOINTS || "[]"),
+
+    tokenCache: new TokenCache()
 
 }

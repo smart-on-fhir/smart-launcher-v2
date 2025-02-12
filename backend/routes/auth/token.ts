@@ -621,6 +621,24 @@ export default class TokenHandler {
         // as well as the Pragma response header field with a value of no-cache.
         res.set({ "Cache-Control": "no-store", "Pragma": "no-cache" });
 
+        if (tokenResponse.id_token) {
+            // Store the context associated with this id_token
+            const idTokenHash = crypto
+                .createHash('sha256')
+                .update(tokenResponse.id_token)
+                .digest('hex');
+            
+            config.tokenCache.set({
+                id_token_hash: idTokenHash,
+                scope: authorizationToken.scope,
+                patient: authorizationToken.context?.patient,
+                user: authorizationToken.user!,
+                client_id: authorizationToken.client_id!,
+                context: authorizationToken.context || {},
+                exp: Math.floor(Date.now()/1000) + (authorizationToken.accessTokensExpireIn || 3600)
+            });
+        }
+
         res.json(tokenResponse);
     }
 }

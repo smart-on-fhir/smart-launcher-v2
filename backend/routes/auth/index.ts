@@ -6,6 +6,7 @@ import register           from "./register"
 import TokenHandler       from "./token"
 import AuthorizeHandler   from "./authorize"
 import { asyncRouteWrap } from "../../lib"
+import getClientRegistration from "./clients"
 
 
 const authServer = express.Router({ mergeParams: true })
@@ -19,6 +20,6 @@ authServer.post("/introspect", urlencoded, asyncRouteWrap(introspect))
 authServer.post("/revoke"    , urlencoded, asyncRouteWrap(revoke))
 authServer.post("/manage"    , urlencoded, asyncRouteWrap(manage))
 authServer.post("/register"  , urlencoded, asyncRouteWrap(register))
-
+authServer.get("/clients/:clientId", asyncRouteWrap(getClientRegistration))
 
 export default authServer
