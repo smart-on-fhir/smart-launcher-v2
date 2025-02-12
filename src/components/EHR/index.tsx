@@ -82,7 +82,14 @@ export default function EHR() {
                     <div className="ehr-sidebar">
                         <h3>EHR Sidebar</h3>
                     </div>
-                    <iframe name="iframe" id="frame" title="EHR Frame" src={launchUrl + ""}></iframe>
+                    <iframe
+                        name="iframe"
+                        id="frame"
+                        title="EHR Frame"
+                        src={launchUrl + ""}
+                        sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads"
+                        allow="microphone *; camera *">
+                    </iframe>
                     <div className="ehr-sidebar">
                         <h3>EHR Sidebar</h3>
                     </div>
