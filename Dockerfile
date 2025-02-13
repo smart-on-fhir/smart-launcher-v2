@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM node:18 AS build
+FROM node:23 AS build
 
 # Set the working directory
 WORKDIR /app
@@ -33,8 +33,8 @@ COPY --from=build /app/src/isomorphic ./src/isomorphic
 COPY --from=build /app/build ./build
 
 # Set environment variables
-ENV NODE_ENV "production"
-ENV PORT "80"
+ENV NODE_ENV="production"
+ENV PORT="80"
 
 # Expose the port
 EXPOSE 80
