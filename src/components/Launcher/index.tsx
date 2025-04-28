@@ -485,6 +485,7 @@ function LaunchTab() {
                         >
                             <option value="AUTO">Select the most recent encounter if available</option>
                             <option value="MANUAL">Manually select an encounter if available</option>
+                            <option value="NONE">Do not select an encounter</option>
                         </select>
                         <span className="help-block small">
                             How to select the current Encounter

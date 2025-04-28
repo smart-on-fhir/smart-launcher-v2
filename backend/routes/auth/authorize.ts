@@ -654,7 +654,7 @@ export default class AuthorizeHandler {
 
     private async getFirstEncounterId(): Promise<string | undefined> {
         const fhirServer = getFhirServerBaseUrl(this.request as any);
-        const url = new URL(`/Encounter/?_count=1&_sort:desc=date`, fhirServer)
+        const url = new URL(`Encounter/?_count=1&_sort:desc=date`, fhirServer)
         url.searchParams.set("patient", this.launchOptions.patient.get(0)!)
         const res = await fetch(url)
         const txt = await res.text()
