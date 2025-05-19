@@ -60,11 +60,13 @@ export default async function proxy(req: Request, res: Response) {
         }
     })
 
-    let body = await response.text()
-
     if (!isBinary) {
+        let body = await response.text()
         body = body.replaceAll(fhirServer + "", `${getRequestBaseURL(req)}${req.baseUrl}`);
+        res.end(body);
+    } else {
+        // @ts-ignore
+        let body = await response.buffer()
+        res.end(body);
     }
-
-    res.end(body);
 }
